@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>📚 Klasfeedback · BTV 3F</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f5f7fc;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            padding: 24px 28px;
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15);
+        }
+        h1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            align-items: center;
+            background: #f8faff;
+            padding: 16px 20px;
+            border-radius: 60px;
+            margin: 12px 0 20px 0;
+        }
+        .flex-row label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        select, input[type="text"] {
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #d0d9e8;
+            background: white;
+            font-size: 1rem;
+            min-width: 160px;
+        }
+        select { min-width: 180px; }
+        .btn {
+            background: #1e3a8a;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 22px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { background: #1e4f9e; transform: scale(0.97); }
+        .btn-outline {
+            background: white;
+            color: #1e3a8a;
+            border-color: #bcc9e6;
+        }
+        .btn-outline:hover { background: #eef3ff; }
+        .btn-danger {
+            background: #b91c1c;
+            color: white;
+        }
+        .btn-danger:hover { background: #a01515; }
+        .btn-warning {
+            background: #dc2626;
+            color: white;
+            font-weight: 700;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .btn-warning:hover { background: #b91c1c; transform: scale(0.96); }
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-success:hover { background: #15803d; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            margin: 20px 0 10px;
+        }
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+        /* Linkerkolom: PDF-viewer */
+        .pdf-pane {
+            background: #fafcff;
+            border-radius: 24px;
+            padding: 16px;
+            border: 1px solid #e2eaf5;
+            min-height: 420px;
+        }
+        .pdf-pane h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-weight: 500;
+        }
+        .pdf-viewer {
+            background: #eef2f8;
+            border-radius: 18px;
+            padding: 8px;
+            height: 800px;          /* AANGEPAST: van 600px naar 800px */
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #d4dfec;
+        }
+        .pdf-viewer iframe, .pdf-viewer embed {
+            width: 100%;
+            height: 100%;
+            min-height: 800px;      /* AANGEPAST: van 550px naar 800px */
+            border-radius: 12px;
+            background: white;
+        }
+        .footer-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            gap: 12px;
+        }
+        .file-upload-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .file-upload-wrapper input[type="file"] {
+            max-width: 200px;
+        }
+        .doc-meta { font-size: 0.9rem; color: #475569; }
+
+        /* Rechterkolom: Kwaliteitscheck + livefeed */
+        .right-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .kwaliteitscheck {
+            background: #ffffff;
+            border: 1px solid #dce3ef;
+            border-radius: 24px;
+            padding: 16px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .kwaliteitscheck h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .kwaliteitscheck .item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .kwaliteitscheck .item .num {
+            font-weight: 600;
+            min-width: 30px;
+            color: #1e3a8a;
+        }
+        .kwaliteitscheck .item .desc {
+            flex: 1;
+        }
+        .kwaliteitscheck .item textarea {
+            width: 100%;
+            border: 1px solid #d0d9e8;
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 40px;
+            background: #f8fafc;
+            transition: 0.2s;
+        }
+        .kwaliteitscheck .item textarea:focus {
+            outline: 2px solid #1e3a8a;
+            background: white;
+        }
+        .kwaliteitscheck .send-area {
+            margin-top: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .livefeed {
+            background: #f2f6fe;
+            border-radius: 24px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #d9e2f0;
+        }
+        .livefeed h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .livefeed .entry {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border-left: 4px solid #1e3a8a;
+        }
+        .livefeed .entry strong {
+            color: #1e3a8a;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .livefeed .entry .feedback-text {
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-height: 120px;
+            overflow-y: auto;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+        .livefeed .entry .feedback-text .item-line {
+            margin-bottom: 2px;
+        }
+        .status-msg {
+            background: #d1fae5;
+            padding: 6px 16px;
+            border-radius: 40px;
+            color: #065f46;
+        }
+        .reset-warning {
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: #991b1b;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .reset-icon { font-size: 1.4rem; }
+        hr { margin: 18px 0; border: 1px dashed #dce3ef; }
+        .small-badge {
+            font-size: 0.75rem;
+            background: #dbe7fa;
+            padding: 4px 12px;
+            border-radius: 30px;
+        }
+        .flex-center { display: flex; align-items: center; gap: 8px; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <h1>📚 Klasfeedback · BTV 3F</h1>
+
+    <!-- Inlog & klas -->
+    <div class="flex-row">
+        <label>👤 Voornaam <input type="text" id="studentName" placeholder="bv. jouw voornaam" style="min-width:120px;"></label>
+        <label>📌 Klas 
+            <select id="classSelect">
+                <option value="ALPHA">ALPHA</option>
+                <option value="BRAVO">BRAVO</option>
+                <option value="CHARLIE">CHARLIE</option>
+                <option value="DELTA">DELTA</option>
+                <option value="ECHO">ECHO</option>
+                <option value="FOXTROT">FOXTROT</option>
+                <option value="HOTEL">HOTEL</option>
+                <option value="JULIETT">JULIETT</option>
+                <option value="KILO">KILO</option>
+                <option value="LIMA">LIMA</option>
+                <option value="MIKE">MIKE</option>
+            </select>
+        </label>
+        <button class="btn" id="loginBtn">🔓 Inloggen</button>
+        <span id="loginStatus" class="status-msg">Niet ingelogd</span>
+    </div>
+
+    <!-- Resetknop -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 12px; align-items: center;">
+        <div class="reset-warning">
+            <span class="reset-icon">⚠️</span> Verwijdert ALLE data uit de geselecteerde klas
+        </div>
+        <button class="btn btn-warning" id="hardResetBtn">🧹 HARDE RESET</button>
+    </div>
+
+    <!-- Hoofdgrid -->
+    <div class="grid-2">
+        <!-- LINKERKOLOM: PDF-viewer (docent upload) -->
+        <div class="pdf-pane">
+            <h3>📄 Document (docent) 
+                <span class="small-badge" id="currentClassBadge">ALPHA</span>
+            </h3>
+            <div class="pdf-viewer" id="pdfViewerContainer">
+                <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#8a9bb5;">
+                    📎 Log in en upload een PDF via de knop hieronder
+                </div>
+            </div>
+            <div class="footer-actions">
+                <div class="file-upload-wrapper">
+                    <span class="doc-meta">📤 Docent PDF</span>
+                    <input type="file" id="pdfUpload" accept=".pdf">
+                    <button class="btn btn-outline" id="uploadPdfBtn">⬆ Upload</button>
+                </div>
+                <div style="font-size:0.9rem; color:#3b5a8c;">
+                    ⚡ Alleen PDF-bestanden
+                </div>
+            </div>
+        </div>
+
+        <!-- RECHTERKOLOM: Kwaliteitscheck (vast) + livefeed -->
+        <div class="right-pane">
+            <!-- Kwaliteitscheck formulier -->
+            <div class="kwaliteitscheck" id="kwaliteitscheckForm">
+                <h3>📋 Kwaliteitscheck BTV 3F <span class="small-badge">invullen en verzenden</span></h3>
+                <!-- 21 items worden dynamisch gegenereerd, maar we kunnen ze ook statisch zetten voor de leesbaarheid -->
+                <div id="checklistContainer"></div>
+                <div class="send-area">
+                    <span id="feedbackStatus" style="color:#2563eb;"></span>
+                    <button class="btn btn-success" id="sendFeedbackBtn">📨 Verzenden</button>
+                </div>
+            </div>
+
+            <!-- Livefeed -->
+            <div class="livefeed" id="liveFeedContainer">
+                <h3>📢 Klassenlivefeed <span class="small-badge" id="feedCount">0</span></h3>
+                <div id="feedEntries">
+                    <div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ------ FIREBASE CONFIG ------
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj8dXkl1rEfyx54_MDy_tYd2P7kAeU8VQ",
+            authDomain: "q2les3samirgem.firebaseapp.com",
+            databaseURL: "https://q2les3samirgem-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "q2les3samirgem",
+            storageBucket: "q2les3samirgem.firebasestorage.app",
+            messagingSenderId: "8681998187",
+            appId: "1:8681998187:web:fd08067494a010dc572e2e"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // DOM referenties
+        const studentNameInput = document.getElementById('studentName');
+        const classSelect = document.getElementById('classSelect');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginStatus = document.getElementById('loginStatus');
+        const pdfViewer = document.getElementById('pdfViewerContainer');
+        const pdfUpload = document.getElementById('pdfUpload');
+        const uploadPdfBtn = document.getElementById('uploadPdfBtn');
+        const hardResetBtn = document.getElementById('hardResetBtn');
+        const currentClassBadge = document.getElementById('currentClassBadge');
+        const sendFeedbackBtn = document.getElementById('sendFeedbackBtn');
+        const feedbackStatus = document.getElementById('feedbackStatus');
+        const feedEntries = document.getElementById('feedEntries');
+        const feedCount = document.getElementById('feedCount');
+        const checklistContainer = document.getElementById('checklistContainer');
+
+        // State
+        let currentUser = '';
+        let currentClass = 'ALPHA';
+        let isLoggedIn = false;
+        let pdfDataURL = null;
+
+        // ----- Kwaliteitscheck items (21) -----
+        const items = [
+            "beschrijft in de inleiding van de tekst de aanleiding tot het schrijven van dit proces-verbaal.",
+            "beschrijft het decor op de juiste wijze.",
+            "beschrijft in de kern relevante waarnemingen en handelingen.",
+            "beschrijft in het slot de afhandeling en overige relevante informatie.",
+            "beschrijft zoveel mogelijk de 7 Gouden W's.",
+            "gebruikt de redenen van wetenschap op de juiste manier.",
+            "beschrijft goederen en personen op de juiste manier.",
+            "schrijft feitelijk en eenduidig.",
+            "schrijft relevante plaatsen, data en tijdstippen op de juiste manier.",
+            "deelt de tekst van het proces-verbaal op in alinea's.",
+            "schrijft de gebeurtenissen in chronologische volgorde.",
+            "gebruikt juiste signaalwoorden en voegwoorden.",
+            "gebruikt juiste verwijswoorden.",
+            "past de schrijfstijl aan de lezer aan.",
+            "is consistent in het benoemen van betrokkenen en voorwerpen in het proces-verbaal.",
+            "gebruikt woorden en vaste zinsdelen op de juiste manier.",
+            "gebruikt hoofdletters op de juiste manier.",
+            "gebruikt leestekens op de juiste manier.",
+            "schrijft zinnen die grammaticaal correct zijn.",
+            "spelt woorden op de juiste manier.",
+            "spelt werkwoorden op de juiste manier."
+        ];
+
+        // Bouw het formulier
+        function buildChecklist() {
+            let html = '';
+            items.forEach((desc, index) => {
+                const num = index + 1;
+                html += `
+                    <div class="item">
+                        <div class="num">${num}.</div>
+                        <div class="desc">
+                            <div style="font-weight:500; margin-bottom:2px;">${desc}</div>
+                            <textarea id="item_${num}" placeholder="Schrijf hier je feedback..." rows="2"></textarea>
+                        </div>
+                    </div>
+                `;
+            });
+            checklistContainer.innerHTML = html;
+        }
+        buildChecklist();
+
+        // ----- Hulpfuncties: PDF weergave -----
+        function renderPDF(pdfBase64OrUrl) {
+            if (!pdfBase64OrUrl) {
+                pdfViewer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#8a9bb5; flex-direction:column;">
+                    <span style="font-size:3rem;">📄</span>
+                    <p>Geen PDF geüpload. Docent kan een PDF toevoegen.</p>
+                </div>`;
+                return;
+            }
+            if (pdfBase64OrUrl.startsWith('data:application/pdf') || pdfBase64OrUrl.startsWith('http')) {
+                pdfViewer.innerHTML = `<iframe src="${pdfBase64OrUrl}" style="width:100%; height:100%; border:none; border-radius:12px; background:white;"></iframe>`;
+            } else {
+                pdfViewer.innerHTML = `<iframe src="${pdfBase64OrUrl}" style="width:100%; height:100%; border:none; border-radius:12px; background:white;"></iframe>`;
+            }
+        }
+
+        function loadPdfForClass(className) {
+            const pdfRef = db.ref('classes/' + className + '/pdf');
+            pdfRef.once('value').then(snapshot => {
+                const val = snapshot.val();
+                if (val && val.data) {
+                    pdfDataURL = val.data;
+                    renderPDF(pdfDataURL);
+                } else {
+                    pdfDataURL = null;
+                    renderPDF(null);
+                }
+            }).catch(err => {
+                console.warn('PDF laadfout:', err);
+                renderPDF(null);
+            });
+        }
+
+        // ----- Livefeed (real-time) -----
+        function startLiveFeed(className) {
+            const feedRef = db.ref('classes/' + className + '/feedback');
+            feedRef.off();
+            feedRef.on('value', snapshot => {
+                const data = snapshot.val();
+                let html = '';
+                let count = 0;
+                if (data) {
+                    const keys = Object.keys(data);
+                    count = keys.length;
+                    const entries = keys.map(k => ({ key: k, ...data[k] }));
+                    entries.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    entries.forEach(entry => {
+                        const naam = entry.student || 'anoniem';
+                        const feedbackObj = entry.feedback || {};
+                        // Bouw een tekstuele weergave van alle items
+                        let feedbackText = '';
+                        for (let i = 1; i <= 21; i++) {
+                            const val = feedbackObj[i] || '';
+                            if (val.trim() !== '') {
+                                feedbackText += `● ${i}. ${val.trim()}\n`;
+                            }
+                        }
+                        if (!feedbackText) feedbackText = '(geen feedback ingevuld)';
+                        html += `
+                            <div class="entry">
+                                <strong>${naam}</strong>
+                                <div class="feedback-text">${feedbackText.replace(/\n/g, '<br>')}</div>
+                            </div>
+                        `;
+                    });
+                }
+                if (!html) html = '<div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>';
+                feedEntries.innerHTML = html;
+                feedCount.textContent = count;
+            });
+        }
+
+        // ----- Feedback verzenden (kwaliteitscheck) -----
+        function sendFeedback() {
+            if (!isLoggedIn) {
+                feedbackStatus.textContent = '⚠️ Log eerst in';
+                return;
+            }
+            // Verzamel alle ingevulde velden
+            const feedbackData = {};
+            let anyFilled = false;
+            for (let i = 1; i <= 21; i++) {
+                const textarea = document.getElementById(`item_${i}`);
+                if (textarea) {
+                    const val = textarea.value.trim();
+                    feedbackData[i] = val;
+                    if (val !== '') anyFilled = true;
+                }
+            }
+            if (!anyFilled) {
+                feedbackStatus.textContent = '✏️ Vul ten minste één veld in';
+                return;
+            }
+
+            const feedbackRef = db.ref('classes/' + currentClass + '/feedback');
+            const newRef = feedbackRef.push();
+            newRef.set({
+                student: currentUser,
+                feedback: feedbackData,
+                timestamp: Date.now()
+            }).then(() => {
+                feedbackStatus.textContent = '✅ Verzonden!';
+                // Wis de velden na verzenden (optioneel)
+                for (let i = 1; i <= 21; i++) {
+                    const textarea = document.getElementById(`item_${i}`);
+                    if (textarea) textarea.value = '';
+                }
+                setTimeout(() => feedbackStatus.textContent = '', 3000);
+            }).catch(err => {
+                feedbackStatus.textContent = '❌ Fout: ' + err.message;
+            });
+        }
+
+        // ----- Harde reset -----
+        function hardReset() {
+            if (!confirm(`⚠️ WAARSCHUWING: Dit verwijdert ALLE data uit klas ${currentClass}.\n\n- Alle feedback\n- De geüploade PDF\n\nWeet je het zeker?`)) return;
+            if (!confirm(`Laatste kans: echt ALLES uit ${currentClass} verwijderen?`)) return;
+
+            const classRef = db.ref('classes/' + currentClass);
+            classRef.remove().then(() => {
+                alert(`✅ Klasse ${currentClass} is volledig gereset!`);
+                pdfDataURL = null;
+                renderPDF(null);
+                feedEntries.innerHTML = '<div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>';
+                feedCount.textContent = '0';
+                feedbackStatus.textContent = '🔄 Reset voltooid';
+                setTimeout(() => feedbackStatus.textContent = '', 3000);
+                // Herlaad PDF (lege)
+                loadPdfForClass(currentClass);
+            }).catch(err => alert('❌ Reset fout: ' + err.message));
+        }
+
+        // ----- Docent upload PDF -----
+        function uploadPdf() {
+            if (!isLoggedIn) {
+                alert('Log eerst in als docent');
+                return;
+            }
+            const file = pdfUpload.files[0];
+            if (!file || file.type !== 'application/pdf') {
+                alert('Selecteer een PDF-bestand.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                const pdfRef = db.ref('classes/' + currentClass + '/pdf');
+                pdfRef.set({ data: base64, uploadedBy: currentUser, timestamp: Date.now() })
+                .then(() => {
+                    alert('PDF succesvol geüpload voor klas ' + currentClass);
+                    pdfDataURL = base64;
+                    renderPDF(base64);
+                    pdfUpload.value = '';
+                }).catch(err => alert('Upload fout: ' + err.message));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ----- Inloggen -----
+        function login() {
+            const name = studentNameInput.value.trim();
+            if (!name) {
+                loginStatus.textContent = '❌ Voer een voornaam in';
+                return;
+            }
+            currentUser = name;
+            currentClass = classSelect.value;
+            isLoggedIn = true;
+            loginStatus.textContent = `✅ Ingelogd als ${currentUser} in ${currentClass}`;
+            currentClassBadge.textContent = currentClass;
+            loadPdfForClass(currentClass);
+            startLiveFeed(currentClass);
+            feedbackStatus.textContent = '';
+        }
+
+        // ----- Initialisatie -----
+        function init() {
+            currentClass = classSelect.value;
+            currentClassBadge.textContent = currentClass;
+            // Auto-login als er een naam is (niet meer standaard)
+            if (studentNameInput.value.trim() !== '') {
+                login();
+            } else {
+                loginStatus.textContent = '👤 Voer naam in en klik inloggen';
+            }
+
+            // Event listeners
+            loginBtn.addEventListener('click', login);
+            sendFeedbackBtn.addEventListener('click', sendFeedback);
+            uploadPdfBtn.addEventListener('click', uploadPdf);
+            hardResetBtn.addEventListener('click', hardReset);
+
+            classSelect.addEventListener('change', function() {
+                if (isLoggedIn) login();
+                else {
+                    currentClass = classSelect.value;
+                    currentClassBadge.textContent = currentClass;
+                }
+            });
+
+            // Ctrl+Enter op elk tekstveld kan verzenden
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    const active = document.activeElement;
+                    if (active && active.tagName === 'TEXTAREA' && active.closest('.kwaliteitscheck')) {
+                        e.preventDefault();
+                        sendFeedback();
+                    }
+                }
+            });
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
