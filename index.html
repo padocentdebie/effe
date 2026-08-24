@@ -124,17 +124,17 @@
             background: #eef2f8;
             border-radius: 18px;
             padding: 8px;
-            height: 800px;          /* AANGEPAST: van 600px naar 800px */
+            height: 800px;
             overflow-y: auto;
             overflow-x: auto;
             border: 1px solid #d4dfec;
         }
-        .pdf-viewer iframe, .pdf-viewer embed {
+        /* AANGEPAST: embed vult volledig, geen eigen scrollbars */
+        .pdf-viewer embed {
             width: 100%;
             height: 100%;
-            min-height: 800px;      /* AANGEPAST: van 550px naar 800px */
-            border-radius: 12px;
-            background: white;
+            border: none;
+            display: block;
         }
         .footer-actions {
             display: flex;
@@ -351,7 +351,6 @@
             <!-- Kwaliteitscheck formulier -->
             <div class="kwaliteitscheck" id="kwaliteitscheckForm">
                 <h3>📋 Kwaliteitscheck BTV 3F <span class="small-badge">invullen en verzenden</span></h3>
-                <!-- 21 items worden dynamisch gegenereerd, maar we kunnen ze ook statisch zetten voor de leesbaarheid -->
                 <div id="checklistContainer"></div>
                 <div class="send-area">
                     <span id="feedbackStatus" style="color:#2563eb;"></span>
@@ -460,11 +459,8 @@
                 </div>`;
                 return;
             }
-            if (pdfBase64OrUrl.startsWith('data:application/pdf') || pdfBase64OrUrl.startsWith('http')) {
-                pdfViewer.innerHTML = `<iframe src="${pdfBase64OrUrl}" style="width:100%; height:100%; border:none; border-radius:12px; background:white;"></iframe>`;
-            } else {
-                pdfViewer.innerHTML = `<iframe src="${pdfBase64OrUrl}" style="width:100%; height:100%; border:none; border-radius:12px; background:white;"></iframe>`;
-            }
+            // AANGEPAST: gebruik <embed> in plaats van <iframe> om dubbele scrollbars te voorkomen
+            pdfViewer.innerHTML = `<embed src="${pdfBase64OrUrl}" type="application/pdf" style="width:100%; height:100%; border:none;" />`;
         }
 
         function loadPdfForClass(className) {
@@ -500,7 +496,6 @@
                     entries.forEach(entry => {
                         const naam = entry.student || 'anoniem';
                         const feedbackObj = entry.feedback || {};
-                        // Bouw een tekstuele weergave van alle items
                         let feedbackText = '';
                         for (let i = 1; i <= 21; i++) {
                             const val = feedbackObj[i] || '';
@@ -529,7 +524,6 @@
                 feedbackStatus.textContent = '⚠️ Log eerst in';
                 return;
             }
-            // Verzamel alle ingevulde velden
             const feedbackData = {};
             let anyFilled = false;
             for (let i = 1; i <= 21; i++) {
@@ -553,7 +547,6 @@
                 timestamp: Date.now()
             }).then(() => {
                 feedbackStatus.textContent = '✅ Verzonden!';
-                // Wis de velden na verzenden (optioneel)
                 for (let i = 1; i <= 21; i++) {
                     const textarea = document.getElementById(`item_${i}`);
                     if (textarea) textarea.value = '';
@@ -578,7 +571,6 @@
                 feedCount.textContent = '0';
                 feedbackStatus.textContent = '🔄 Reset voltooid';
                 setTimeout(() => feedbackStatus.textContent = '', 3000);
-                // Herlaad PDF (lege)
                 loadPdfForClass(currentClass);
             }).catch(err => alert('❌ Reset fout: ' + err.message));
         }
@@ -630,14 +622,12 @@
         function init() {
             currentClass = classSelect.value;
             currentClassBadge.textContent = currentClass;
-            // Auto-login als er een naam is (niet meer standaard)
             if (studentNameInput.value.trim() !== '') {
                 login();
             } else {
                 loginStatus.textContent = '👤 Voer naam in en klik inloggen';
             }
 
-            // Event listeners
             loginBtn.addEventListener('click', login);
             sendFeedbackBtn.addEventListener('click', sendFeedback);
             uploadPdfBtn.addEventListener('click', uploadPdf);
@@ -651,7 +641,6 @@
                 }
             });
 
-            // Ctrl+Enter op elk tekstveld kan verzenden
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     const active = document.activeElement;
