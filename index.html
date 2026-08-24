@@ -124,17 +124,17 @@
             background: #eef2f8;
             border-radius: 18px;
             padding: 8px;
-            height: 800px;
-            overflow-y: auto;   /* Laat de container zelf scrollen */
+            height: 90vh;               /* AANGEPAST: groter venster */
+            max-height: 850px;          /* veilige max hoogte */
+            overflow-y: auto;
             overflow-x: auto;
             border: 1px solid #d4dfec;
         }
-        /* AANGEPAST: iframe zonder eigen scrollbars */
-        .pdf-viewer iframe {
+        /* AANGEPAST: embed vult volledig, geen eigen scrollbars */
+        .pdf-viewer embed {
             width: 100%;
             height: 100%;
             border: none;
-            overflow: hidden;
             display: block;
         }
         .footer-actions {
@@ -460,8 +460,8 @@
                 </div>`;
                 return;
             }
-            // AANGEPAST: iframe met scrolling="no" en overflow:hidden om dubbele scrollbars te voorkomen
-            pdfViewer.innerHTML = `<iframe src="${pdfBase64OrUrl}" scrolling="no" style="width:100%; height:100%; border:none; overflow:hidden;"></iframe>`;
+            // Gebruik <embed> in plaats van <iframe> voor een naadloze, grote weergave
+            pdfViewer.innerHTML = `<embed src="${pdfBase64OrUrl}" type="application/pdf" style="width:100%; height:100%; border:none;" />`;
         }
 
         function loadPdfForClass(className) {
