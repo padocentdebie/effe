@@ -105,7 +105,6 @@
         @media (max-width: 900px) {
             .grid-2 { grid-template-columns: 1fr; }
         }
-        /* Linkerkolom: PDF-viewer */
         .pdf-pane {
             background: #fafcff;
             border-radius: 24px;
@@ -124,14 +123,12 @@
             background: #eef2f8;
             border-radius: 18px;
             padding: 8px;
-            height: 90vh;               /* AANGEPAST: groter venster */
-            max-height: 850px;          /* veilige max hoogte */
-            overflow-y: hidden;
-            overflow-x: hidden;
+            height: 90vh;
+            max-height: 850px;
+            overflow: hidden;
             border: 1px solid #d4dfec;
         }
-        /* AANGEPAST: embed vult volledig, geen eigen scrollbars */
-        .pdf-viewer embed {
+        .pdf-viewer object {
             width: 100%;
             height: 100%;
             border: none;
@@ -156,7 +153,6 @@
         }
         .doc-meta { font-size: 0.9rem; color: #475569; }
 
-        /* Rechterkolom: Kwaliteitscheck + livefeed */
         .right-pane {
             display: flex;
             flex-direction: column;
@@ -258,9 +254,6 @@
             border-radius: 10px;
             margin-top: 4px;
         }
-        .livefeed .entry .feedback-text .item-line {
-            margin-bottom: 2px;
-        }
         .status-msg {
             background: #d1fae5;
             padding: 6px 16px;
@@ -279,21 +272,18 @@
             gap: 8px;
         }
         .reset-icon { font-size: 1.4rem; }
-        hr { margin: 18px 0; border: 1px dashed #dce3ef; }
         .small-badge {
             font-size: 0.75rem;
             background: #dbe7fa;
             padding: 4px 12px;
             border-radius: 30px;
         }
-        .flex-center { display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
 <div class="container" id="app">
     <h1>📚 Klasfeedback · BTV 3F</h1>
 
-    <!-- Inlog & klas -->
     <div class="flex-row">
         <label>👤 Voornaam <input type="text" id="studentName" placeholder="bv. jouw voornaam" style="min-width:120px;"></label>
         <label>📌 Klas 
@@ -315,7 +305,6 @@
         <span id="loginStatus" class="status-msg">Niet ingelogd</span>
     </div>
 
-    <!-- Resetknop -->
     <div style="display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 12px; align-items: center;">
         <div class="reset-warning">
             <span class="reset-icon">⚠️</span> Verwijdert ALLE data uit de geselecteerde klas
@@ -323,9 +312,7 @@
         <button class="btn btn-warning" id="hardResetBtn">🧹 HARDE RESET</button>
     </div>
 
-    <!-- Hoofdgrid -->
     <div class="grid-2">
-        <!-- LINKERKOLOM: PDF-viewer (docent upload) -->
         <div class="pdf-pane">
             <h3>📄 Document (docent) 
                 <span class="small-badge" id="currentClassBadge">ALPHA</span>
@@ -347,9 +334,7 @@
             </div>
         </div>
 
-        <!-- RECHTERKOLOM: Kwaliteitscheck (vast) + livefeed -->
         <div class="right-pane">
-            <!-- Kwaliteitscheck formulier -->
             <div class="kwaliteitscheck" id="kwaliteitscheckForm">
                 <h3>📋 Kwaliteitscheck BTV 3F <span class="small-badge">invullen en verzenden</span></h3>
                 <div id="checklistContainer"></div>
@@ -359,7 +344,6 @@
                 </div>
             </div>
 
-            <!-- Livefeed -->
             <div class="livefeed" id="liveFeedContainer">
                 <h3>📢 Klassenlivefeed <span class="small-badge" id="feedCount">0</span></h3>
                 <div id="feedEntries">
@@ -372,7 +356,6 @@
 
 <script>
     (function() {
-        // ------ FIREBASE CONFIG ------
         const firebaseConfig = {
             apiKey: "AIzaSyBj8dXkl1rEfyx54_MDy_tYd2P7kAeU8VQ",
             authDomain: "q2les3samirgem.firebaseapp.com",
@@ -385,7 +368,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // DOM referenties
         const studentNameInput = document.getElementById('studentName');
         const classSelect = document.getElementById('classSelect');
         const loginBtn = document.getElementById('loginBtn');
@@ -401,13 +383,11 @@
         const feedCount = document.getElementById('feedCount');
         const checklistContainer = document.getElementById('checklistContainer');
 
-        // State
         let currentUser = '';
         let currentClass = 'ALPHA';
         let isLoggedIn = false;
         let pdfDataURL = null;
 
-        // ----- Kwaliteitscheck items (21) -----
         const items = [
             "beschrijft in de inleiding van de tekst de aanleiding tot het schrijven van dit proces-verbaal.",
             "beschrijft het decor op de juiste wijze.",
@@ -432,7 +412,6 @@
             "spelt werkwoorden op de juiste manier."
         ];
 
-        // Bouw het formulier
         function buildChecklist() {
             let html = '';
             items.forEach((desc, index) => {
@@ -451,7 +430,7 @@
         }
         buildChecklist();
 
-        // ----- Hulpfuncties: PDF weergave -----
+        // AANGEPAST: PDF renderen via <object> + parameters zonder ingebouwde scrollbalken
         function renderPDF(pdfBase64OrUrl) {
             if (!pdfBase64OrUrl) {
                 pdfViewer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#8a9bb5; flex-direction:column;">
@@ -460,8 +439,7 @@
                 </div>`;
                 return;
             }
-            // Gebruik <embed> in plaats van <iframe> voor een naadloze, grote weergave
-            pdfViewer.innerHTML = `<embed src="${pdfBase64OrUrl}" type="application/pdf" style="width:100%; height:100%; border:none;" />`;
+            pdfViewer.innerHTML = `<object data="${pdfBase64OrUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" type="application/pdf" style="width:100%; height:100%; border:none;"></object>`;
         }
 
         function loadPdfForClass(className) {
@@ -481,7 +459,6 @@
             });
         }
 
-        // ----- Livefeed (real-time) -----
         function startLiveFeed(className) {
             const feedRef = db.ref('classes/' + className + '/feedback');
             feedRef.off();
@@ -519,7 +496,6 @@
             });
         }
 
-        // ----- Feedback verzenden (kwaliteitscheck) -----
         function sendFeedback() {
             if (!isLoggedIn) {
                 feedbackStatus.textContent = '⚠️ Log eerst in';
@@ -558,7 +534,6 @@
             });
         }
 
-        // ----- Harde reset -----
         function hardReset() {
             if (!confirm(`⚠️ WAARSCHUWING: Dit verwijdert ALLE data uit klas ${currentClass}.\n\n- Alle feedback\n- De geüploade PDF\n\nWeet je het zeker?`)) return;
             if (!confirm(`Laatste kans: echt ALLES uit ${currentClass} verwijderen?`)) return;
@@ -576,7 +551,6 @@
             }).catch(err => alert('❌ Reset fout: ' + err.message));
         }
 
-        // ----- Docent upload PDF -----
         function uploadPdf() {
             if (!isLoggedIn) {
                 alert('Log eerst in als docent');
@@ -602,7 +576,6 @@
             reader.readAsDataURL(file);
         }
 
-        // ----- Inloggen -----
         function login() {
             const name = studentNameInput.value.trim();
             if (!name) {
@@ -619,7 +592,6 @@
             feedbackStatus.textContent = '';
         }
 
-        // ----- Initialisatie -----
         function init() {
             currentClass = classSelect.value;
             currentClassBadge.textContent = currentClass;
