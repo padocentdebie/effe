@@ -1,286 +1,302 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>📻 Porto - Lesmutatie</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <!-- Leaflet CSS en JS toevoegen -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>📚 Klasfeedback · BTV 3F</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Alle stijlen blijven identiek */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0a0e17; color: #e0e0e0;
-            padding: 16px; max-width: 800px; margin: 0 auto;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f5f7fc;
+            padding: 20px;
+            color: #1e293b;
         }
         .container {
-            background: #1a2332; border-radius: 20px; padding: 20px;
-            border: 2px solid #2a3a4a; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-            margin-bottom: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            padding: 24px 28px;
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15);
         }
-        h1 { text-align: center; color: #f0c040; font-size: 1.8rem; }
-        h2 { color: #f0c040; font-size: 1.3rem; margin-bottom: 12px; border-bottom: 1px solid #2a3a4a; padding-bottom: 8px; }
-        .sub { text-align: center; color: #8899aa; font-size: 0.9rem; margin-bottom: 16px; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: 600; font-size: 0.9rem; color: #aabbcc; margin-bottom: 4px; }
-        input, select, textarea {
-            width: 100%; padding: 10px 12px; border-radius: 10px;
-            border: 2px solid #2a3a4a; background: #0d1624; color: #e0e0e0;
-            font-size: 1rem;
-        }
-        textarea { min-height: 60px; resize: vertical; }
-        .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 12px;
-            font-weight: 700; font-size: 1rem; cursor: pointer;
-            transition: all 0.2s; margin-top: 8px;
-        }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-primary { background: #4a90d9; color: white; }
-        .btn-warning { background: #f0c040; color: #1a2332; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            margin: 8px 0;
-        }
-        .status-led {
-            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-            margin-right: 6px;
-        }
-        .status-led.online { background: #28a745; animation: pulse 1.5s infinite; }
-        .status-led.offline { background: #dc3545; }
-        .status-led.speaking { background: #f0c040; animation: pulse 0.3s infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-        .user-list {
-            display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;
-        }
-        .chip {
-            background: #0d1624; padding: 4px 10px; border-radius: 12px;
-            font-size: 0.75rem; border: 1px solid #2a3a4a;
-        }
-        .ptt-btn {
-            width: 100%; padding: 24px; border: none; border-radius: 16px;
-            font-weight: 900; font-size: 1.5rem; cursor: pointer;
-            background: #dc3545; color: white;
-            touch-action: manipulation;
-            box-shadow: 0 4px 0 #a71d2a;
-            transition: all 0.05s;
-        }
-        .ptt-btn:active, .ptt-btn.active {
-            background: #f0c040; color: #1a2332;
-            transform: scale(0.97);
-        }
-        .ptt-btn.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        .chat-box {
-            background: #0d1624; border-radius: 12px; padding: 10px;
-            max-height: 150px; overflow-y: auto; border: 1px solid #2a3a4a;
-            font-size: 0.85rem; margin: 8px 0;
-        }
-        .chat-input-row {
-            display: flex; gap: 6px; margin-top: 8px;
-        }
-        .chat-input-row input {
-            flex: 1; padding: 8px; border-radius: 10px;
-            border: 2px solid #2a3a4a; background: #0d1624; color: #e0e0e0;
-        }
-        .chat-input-row button {
-            padding: 8px 16px; border-radius: 10px; border: none;
-            background: #4a90d9; color: white; cursor: pointer;
-        }
-        .hidden { display: none !important; }
-        .error { color: #dc3545; font-size: 0.85rem; margin-top: 4px; }
-        .micro-status {
-            text-align: center; font-size: 0.8rem; padding: 4px 0;
-            color: #8899aa;
-        }
-        .micro-status.ok { color: #28a745; }
-        .micro-status.err { color: #dc3545; }
-        .micro-status.warning { color: #f0c040; }
-        .role-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 12px;
-            font-size: 0.75rem; font-weight: bold;
-            background: #4a90d9; color: white;
-        }
-        .info-text {
-            color: #8899aa; font-size: 0.75rem; text-align: center; margin-top: 8px;
-        }
-        .retry-btn {
-            margin-top: 4px;
-            padding: 4px 12px;
-            font-size: 0.75rem;
-            background: #4a90d9;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .rolinfo {
-            background: #0d1624;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 8px 0;
-            border-left: 6px solid #f0c040;
-            font-size: 1.2rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-        .rolinfo .label {
-            color: #8899aa;
-            font-size: 0.9rem;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .rolinfo .content {
-            font-weight: 500;
-            color: #e0e0e0;
-        }
-        .tab-nav {
-            display: flex; gap: 4px; margin-bottom: 12px;
-        }
-        .tab-btn {
-            flex: 1; padding: 8px; border: 2px solid #2a3a4a; border-radius: 10px;
-            background: #0d1624; color: #8899aa; cursor: pointer; font-weight: 600; font-size: 0.8rem;
-        }
-        .tab-btn.active { background: #f0c040; color: #1a2332; border-color: #f0c040; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .mutatie-form { background: #0d1624; border-radius: 12px; padding: 16px; margin-top: 8px; }
-        .save-indicator { text-align: center; font-size: 0.75rem; color: #8899aa; margin-top: 4px; }
-        .save-indicator.saved { color: #28a745; }
-        .w-hint { display: inline-block; background: #f0c040; color: #1a2332; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; margin-right: 4px; }
-        .livefeed-item {
-            background: #0d1624; border-radius: 8px; padding: 12px; margin-bottom: 8px;
-            border-left: 4px solid #4a90d9;
-        }
-        .livefeed-item .header {
-            display: flex; justify-content: space-between; color: #8899aa; font-size: 0.8rem;
-        }
-        .livefeed-item .header .auteur { color: #f0c040; font-weight: bold; }
-        .livefeed-item .fields { margin-top: 6px; }
-        .livefeed-item .fields div { margin: 2px 0; font-size: 0.9rem; }
-        .livefeed-item .fields strong { color: #aabbcc; }
-        .livefeed-item .status { margin-top: 6px; font-size: 0.9rem; }
-        .status-complete { color: #28a745; }
-        .status-incomplete { color: #f0c040; }
-        .checklist {
-            display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0;
-        }
-        .checklist .item {
-            background: #1a2a3a; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem;
-        }
-        .checklist .item.ok { color: #28a745; background: #1a3a2a; }
-        .checklist .item.miss { color: #dc3545; background: #3a1a1a; }
-        .admin-bar {
-            display: flex; gap: 8px; margin-top: 12px;
-            flex-wrap: wrap;
-        }
-        .admin-bar .btn { width: auto; padding: 8px 16px; }
-        .empty-state { text-align: center; color: #667788; padding: 20px; font-style: italic; }
-
-        /* Instructieblok */
-        .instructie-blok {
-            background: #0d1624;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-            border: 1px solid #2a3a4a;
-            max-height: 450px;
-            overflow-y: auto;
-        }
-        .instructie-blok h3 {
-            color: #f0c040;
-            font-size: 1.1rem;
+        h1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 1.8rem;
             margin-bottom: 12px;
-            text-align: center;
-            border-bottom: 1px solid #2a3a4a;
-            padding-bottom: 8px;
         }
-        .instructie-stap {
-            background: #1a2332;
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            border-left: 3px solid #4a90d9;
-        }
-        .instructie-stap strong {
-            color: #f0c040;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .instructie-stap p {
-            color: #c8b8e0;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-        .instructie-stap ul {
-            color: #c8b8e0;
-            font-size: 0.9rem;
-            padding-left: 20px;
-            margin: 4px 0;
-        }
-        .instructie-stap ul li {
-            margin: 2px 0;
-        }
-        .waarschuwing {
-            color: #f0c040;
-            font-weight: bold;
-        }
-        code {
-            background: #0a0e17;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #4a90d9;
-        }
-        .w-lijst {
+        .flex-row {
             display: flex;
             flex-wrap: wrap;
+            gap: 16px 24px;
+            align-items: center;
+            background: #f8faff;
+            padding: 16px 20px;
+            border-radius: 60px;
+            margin: 12px 0 20px 0;
+        }
+        .flex-row label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
             gap: 6px;
-            margin: 6px 0;
         }
-        .instructie-tip {
-            background: #1a2a3a;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-            border-left: 3px solid #f0c040;
-            color: #e0e0e0;
-            font-size: 0.9rem;
+        select, input[type="text"] {
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #d0d9e8;
+            background: white;
+            font-size: 1rem;
+            min-width: 160px;
         }
-        /* Kaart styling */
-        #map {
-            height: 300px;
+        select { min-width: 180px; }
+        .btn {
+            background: #1e3a8a;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 22px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { background: #1e4f9e; transform: scale(0.97); }
+        .btn-outline {
+            background: white;
+            color: #1e3a8a;
+            border-color: #bcc9e6;
+        }
+        .btn-outline:hover { background: #eef3ff; }
+        .btn-danger {
+            background: #b91c1c;
+            color: white;
+        }
+        .btn-danger:hover { background: #a01515; }
+        .btn-warning {
+            background: #dc2626;
+            color: white;
+            font-weight: 700;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .btn-warning:hover { background: #b91c1c; transform: scale(0.96); }
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-success:hover { background: #15803d; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            margin: 20px 0 10px;
+        }
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+        /* Linkerkolom: PDF-viewer */
+        .pdf-pane {
+            background: #fafcff;
+            border-radius: 24px;
+            padding: 16px;
+            border: 1px solid #e2eaf5;
+            min-height: 420px;
+        }
+        .pdf-pane h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-weight: 500;
+        }
+        .pdf-viewer {
+            background: #eef2f8;
+            border-radius: 18px;
+            padding: 8px;
+            height: 90vh;               /* AANGEPAST: groter venster */
+            max-height: 850px;          /* veilige max hoogte */
+            overflow-y: hidden;
+            overflow-x: hidden;
+            border: 1px solid #d4dfec;
+        }
+        /* AANGEPAST: embed vult volledig, geen eigen scrollbars */
+        .pdf-viewer embed {
             width: 100%;
-            border-radius: 12px;
-            border: 2px solid #2a3a4a;
-            margin-top: 12px;
-            background: #0d1624;
+            height: 100%;
+            border: none;
+            display: block;
         }
+        .footer-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            gap: 12px;
+        }
+        .file-upload-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .file-upload-wrapper input[type="file"] {
+            max-width: 200px;
+        }
+        .doc-meta { font-size: 0.9rem; color: #475569; }
+
+        /* Rechterkolom: Kwaliteitscheck + livefeed */
+        .right-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .kwaliteitscheck {
+            background: #ffffff;
+            border: 1px solid #dce3ef;
+            border-radius: 24px;
+            padding: 16px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .kwaliteitscheck h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .kwaliteitscheck .item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .kwaliteitscheck .item .num {
+            font-weight: 600;
+            min-width: 30px;
+            color: #1e3a8a;
+        }
+        .kwaliteitscheck .item .desc {
+            flex: 1;
+        }
+        .kwaliteitscheck .item textarea {
+            width: 100%;
+            border: 1px solid #d0d9e8;
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 40px;
+            background: #f8fafc;
+            transition: 0.2s;
+        }
+        .kwaliteitscheck .item textarea:focus {
+            outline: 2px solid #1e3a8a;
+            background: white;
+        }
+        .kwaliteitscheck .send-area {
+            margin-top: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .livefeed {
+            background: #f2f6fe;
+            border-radius: 24px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #d9e2f0;
+        }
+        .livefeed h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .livefeed .entry {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border-left: 4px solid #1e3a8a;
+        }
+        .livefeed .entry strong {
+            color: #1e3a8a;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .livefeed .entry .feedback-text {
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-height: 120px;
+            overflow-y: auto;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+        .livefeed .entry .feedback-text .item-line {
+            margin-bottom: 2px;
+        }
+        .status-msg {
+            background: #d1fae5;
+            padding: 6px 16px;
+            border-radius: 40px;
+            color: #065f46;
+        }
+        .reset-warning {
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: #991b1b;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .reset-icon { font-size: 1.4rem; }
+        hr { margin: 18px 0; border: 1px dashed #dce3ef; }
+        .small-badge {
+            font-size: 0.75rem;
+            background: #dbe7fa;
+            padding: 4px 12px;
+            border-radius: 30px;
+        }
+        .flex-center { display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
+<div class="container" id="app">
+    <h1>📚 Klasfeedback · BTV 3F</h1>
 
-<div id="app">
-    <!-- LOGIN SCHERM -->
-    <div id="loginScreen" class="container">
-        <h1>📻 Porto Lesmutatie</h1>
-        <p class="sub">Simulatie: informatie ophalen en mutatie opmaken</p>
-
-        <div class="form-group">
-            <label>👤 Jouw naam</label>
-            <input type="text" id="usernameInput" placeholder="Bijv. Jan" />
-        </div>
-        <div class="form-group">
-            <label>🏫 Klas</label>
+    <!-- Inlog & klas -->
+    <div class="flex-row">
+        <label>👤 Voornaam <input type="text" id="studentName" placeholder="bv. jouw voornaam" style="min-width:120px;"></label>
+        <label>📌 Klas 
             <select id="classSelect">
                 <option value="ALPHA">ALPHA</option>
                 <option value="BRAVO">BRAVO</option>
@@ -288,1322 +304,357 @@
                 <option value="DELTA">DELTA</option>
                 <option value="ECHO">ECHO</option>
                 <option value="FOXTROT">FOXTROT</option>
-                <option value="GOLF">GOLF</option>
                 <option value="HOTEL">HOTEL</option>
                 <option value="JULIETT">JULIETT</option>
                 <option value="KILO">KILO</option>
                 <option value="LIMA">LIMA</option>
                 <option value="MIKE">MIKE</option>
             </select>
-        </div>
-        <!-- NIEUW: Docentcode veld -->
-        <div class="form-group">
-            <label>🔑 Docentcode (optioneel)</label>
-            <input type="password" id="teacherCode" placeholder="Alleen voor docent" />
-        </div>
-        <button class="btn btn-success" id="connectBtn">🔗 Verbinden</button>
-        <div id="loginError" class="error"></div>
-
-        <!-- INSTRUCTIEBLOK -->
-        <div class="instructie-blok">
-            <h3>📱 Instructies voor studenten</h3>
-            <div class="instructie-stap">
-                <strong>Stap 1: Gebruik de juiste browser</strong>
-                <p>Open <strong>DuckDuckGo</strong> (of Chrome/Firefox in incognitomodus). <span class="waarschuwing">GEEN Samsung-browser!</span></p>
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 2: Open deze link</strong>
-                <p>Typ in de adresbalk: <code>https://padocentdebie.github.io/Q4mutatieportoalles/</code>, of scan deze QR-code:</p>
-                <img src="deze.jpg" alt="QR-code voor Q4mutatieportoalles" style="width: 150px; height: 150px; border-radius: 8px; border: 2px solid #2a3a4a;">
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 3: Log in</strong>
-                <p>Vul je voornaam in, kies je klas en klik op Verbinden.</p>
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 4: Jouw rol</strong>
-                <p>De <strong>docent</strong> wijst de rollen toe. Zodra de docent een rol heeft toegewezen, zie je die in het rolbadge en in het tabblad <strong>Rollen</strong>.</p>
-                <ul>
-                    <li><strong>Burger:</strong> Heeft informatie, maar <span class="waarschuwing">geen PTT</span> (geen spraak).</li>
-                    <li><strong>Collega 1 & 2:</strong> Agenten met PTT, spreken via de porto.</li>
-                    <li><strong>Meldkamer:</strong> Het OC, stuurt de porto-communicatie en vult de mutatie in.</li>
-                </ul>
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 5: Communiceren</strong>
-                <p><strong>Chatten:</strong> Typ een bericht en klik op 📨. <strong>Spreken (PTT):</strong> Houd de rode knop ingedrukt.</p>
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 6: De 7 W's</strong>
-                <p>De meldkamer moet deze informatie ophalen:</p>
-                <div class="w-lijst">
-                    <span class="w-hint">W1</span> Wie &nbsp;
-                    <span class="w-hint">W2</span> Wat &nbsp;
-                    <span class="w-hint">W3</span> Waar &nbsp;
-                    <span class="w-hint">W4</span> Wanneer &nbsp;
-                    <span class="w-hint">W5</span> Waarmee &nbsp;
-                    <span class="w-hint">W6</span> Wijze &nbsp;
-                    <span class="w-hint">W7</span> Waarom
-                </div>
-            </div>
-            <div class="instructie-stap">
-                <strong>Stap 7: Controleren</strong>
-                <p>Bekijk de ingediende mutatie in de <strong>Livefeed</strong> en check of alle W's zijn ingevuld.</p>
-            </div>
-            <div class="instructie-tip">
-                💡 <strong>Tip:</strong> Noteer tussendoor wat je hoort, zodat de meldkamer niets vergeet!
-            </div>
-        </div>
+        </label>
+        <button class="btn" id="loginBtn">🔓 Inloggen</button>
+        <span id="loginStatus" class="status-msg">Niet ingelogd</span>
     </div>
 
-    <!-- HOOFDSCHERM (Porto + Mutatie + Livefeed) -->
-    <div id="mainScreen" class="hidden">
-        <div class="tab-nav">
-            <button class="tab-btn active" data-tab="tab-porto">📻 Porto</button>
-            <button class="tab-btn" data-tab="tab-mutatie">📝 Mutatie</button>
-            <button class="tab-btn" data-tab="tab-feed">📋 Livefeed</button>
-            <button class="tab-btn" data-tab="tab-info">📋 Rollen</button>
-            <!-- NIEUW: Admin tab (alleen voor docent) -->
-            <button class="tab-btn" data-tab="tab-admin" id="adminTabBtn" style="display:none;">🔧 Beheer</button>
+    <!-- Resetknop -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 12px; align-items: center;">
+        <div class="reset-warning">
+            <span class="reset-icon">⚠️</span> Verwijdert ALLE data uit de geselecteerde klas
         </div>
+        <button class="btn btn-warning" id="hardResetBtn">🧹 HARDE RESET</button>
+    </div>
 
-        <!-- TAB PORTO -->
-        <div id="tab-porto" class="tab-content active">
-            <div class="container">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:bold; color:#f0c040;" id="displayName">-</span>
-                    <span id="roleDisplay" class="role-badge">Rol</span>
-                </div>
-                <div class="status-bar">
-                    <span>
-                        <span class="status-led offline" id="statusLed"></span>
-                        <span id="statusText">Niet verbonden</span>
-                    </span>
-                    <span id="userCount" style="font-size:0.8rem;">👥 0</span>
-                </div>
-                <div class="user-list" id="userList"><span style="color:#667788;">Verbinden...</span></div>
-                <div class="micro-status" id="microStatus">
-                    ⏳ Microfoon wordt gestart...
-                    <button class="retry-btn hidden" id="retryMicBtn">🔄 Probeer opnieuw</button>
-                </div>
-
-                <button class="ptt-btn" id="pttButton" disabled>🎤 HOU IN</button>
-                <div style="text-align:center; font-size:0.8rem; color:#8899aa; margin-top:4px;">Ingedrukt houden om te spreken</div>
-
-                <div class="chat-box" id="chatMessages"><div style="color:#667788; text-align:center;">📨 Porto-berichten</div></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chatInput" placeholder="Typ een bericht..." disabled />
-                    <button id="chatSendBtn" disabled>📨</button>
-                </div>
-
-                <!-- NIEUW: Kaart met locaties -->
-                <div id="map"></div>
-
-                <div class="admin-bar">
-                    <button class="btn btn-warning" id="nextCaseBtn" style="display:none;">➡️ Volgende casus</button>
-                    <button class="btn btn-danger" id="resetBtn" style="display:none;">🔄 Reset alles</button>
-                </div>
-
-                <button class="btn btn-danger" id="disconnectBtn" style="margin-top:10px;">🚪 Verbinding verbreken</button>
-            </div>
-        </div>
-
-        <!-- TAB MUTATIE (alleen voor Meldkamer) -->
-        <div id="tab-mutatie" class="tab-content">
-            <!-- NIEUW: Instructieblok voor de meldkamer -->
-            <div class="container">
-                <h2>📡 Instructie Meldkamer</h2>
-                <div class="instructie-blok">
-                    <div class="instructie-stap">
-                        <strong>Portocode</strong>
-                        <p>De portocode die jullie in deze les gebruiken:</p>
-                        <ul>
-                            <li><strong>PA</strong> → academie</li>
-                            <li><strong>84</strong> → regio van de academie</li>
-                            <li><strong>01</strong> → koppelnummer</li>
-                            <li><strong>02</strong> → koppelnummer</li>
-                            <li><strong>03</strong> → koppelnummer</li>
-                        </ul>
-                        <p>Elk tweetal kiest een nummer.<br>Welk koppel is dus: <strong>PA8401</strong>, of <strong>PA8402</strong>, of <strong>PA8403</strong>?</p>
-                    </div>
-                    <div class="instructie-stap">
-                        <strong>Oproep van de meldkamer</strong>
-                        <p>De meldkamer roept een koppel op:<br><em>"PA8401 kom eens uit voor OC, PA8401 kom eens uit?"</em></p>
-                    </div>
-                    <div class="instructie-stap">
-                        <strong>Antwoord van het koppel</strong>
-                        <p>Antwoord van PA8401:<br><em>"PA8401 voor OC"</em></p>
-                    </div>
-                    <div class="instructie-stap">
-                        <strong>Opdracht van de meldkamer</strong>
-                        <p>Meldkamer meldt:<br><em>"PA8401 er is een melding van ... ik wil dat u ter plaatse gaat."</em></p>
-                    </div>
+    <!-- Hoofdgrid -->
+    <div class="grid-2">
+        <!-- LINKERKOLOM: PDF-viewer (docent upload) -->
+        <div class="pdf-pane">
+            <h3>📄 Document (docent) 
+                <span class="small-badge" id="currentClassBadge">ALPHA</span>
+            </h3>
+            <div class="pdf-viewer" id="pdfViewerContainer">
+                <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#8a9bb5;">
+                    📎 Log in en upload een PDF via de knop hieronder
                 </div>
             </div>
-
-            <div class="container">
-                <h2>📝 Mutatieformulier</h2>
-                <p class="sub">Vul de 7 W's in op basis van de verkregen informatie.</p>
-                <div id="casusInfo" style="background:#0d1624; padding:10px; border-radius:8px; margin-bottom:12px; border-left:4px solid #f0c040;">
-                    <strong style="color:#f0c040;">Huidige casus:</strong> <span id="currentCaseName">-</span>
+            <div class="footer-actions">
+                <div class="file-upload-wrapper">
+                    <span class="doc-meta">📤 Docent PDF</span>
+                    <input type="file" id="pdfUpload" accept=".pdf">
+                    <button class="btn btn-outline" id="uploadPdfBtn">⬆ Upload</button>
                 </div>
-                <div class="mutatie-form">
-                    <div class="form-group"><label><span class="w-hint">W1</span> WIE</label><textarea id="mutWie"></textarea></div>
-                    <div class="form-group"><label><span class="w-hint">W2</span> WAT</label><textarea id="mutWat"></textarea></div>
-                    <div class="form-group"><label><span class="w-hint">W3</span> WAAR</label><textarea id="mutWaar"></textarea></div>
-                    <div class="form-group"><label><span class="w-hint">W4</span> WANNEER</label><input type="datetime-local" id="mutWanneer" /></div>
-                    <div class="form-group"><label><span class="w-hint">W5</span> WAARMEE</label><textarea id="mutWaarmee"></textarea></div>
-                    <div class="form-group"><label><span class="w-hint">W6</span> WIJZE</label><textarea id="mutWijze"></textarea></div>
-                    <div class="form-group"><label><span class="w-hint">W7</span> WAAROM</label><textarea id="mutWaarom"></textarea></div>
-                    <button class="btn btn-primary" id="submitMutatieBtn">📤 Mutatie Inleveren</button>
-                    <div class="save-indicator" id="saveIndicator"></div>
+                <div style="font-size:0.9rem; color:#3b5a8c;">
+                    ⚡ Alleen PDF-bestanden
                 </div>
             </div>
         </div>
 
-        <!-- TAB LIVEFEED -->
-        <div id="tab-feed" class="tab-content">
-            <div class="container">
-                <h2>📋 Livefeed - Klas <span id="feedKlas">-</span></h2>
-                <p class="sub">Laatste mutatie ter controle</p>
-                <div id="livefeedContainer"><div class="empty-state">⏳ Wachten op mutatie...</div></div>
-            </div>
-
-            <!-- NIEUW: Live berichten sectie -->
-            <div class="container" style="margin-top:16px;">
-                <h2>📢 Live berichten</h2>
-                <p class="sub">Deel informatie real-time met de klas.</p>
-                <div class="form-group">
-                    <textarea id="liveMsgInput" placeholder="Typ hier je bericht..." style="min-height:60px;"></textarea>
-                </div>
-                <button class="btn btn-primary" id="liveMsgSendBtn">📨 Verstuur bericht</button>
-                <div id="liveMsgContainer" style="margin-top:12px;">
-                    <!-- Hier komen de live berichten -->
+        <!-- RECHTERKOLOM: Kwaliteitscheck (vast) + livefeed -->
+        <div class="right-pane">
+            <!-- Kwaliteitscheck formulier -->
+            <div class="kwaliteitscheck" id="kwaliteitscheckForm">
+                <h3>📋 Kwaliteitscheck BTV 3F <span class="small-badge">invullen en verzenden</span></h3>
+                <div id="checklistContainer"></div>
+                <div class="send-area">
+                    <span id="feedbackStatus" style="color:#2563eb;"></span>
+                    <button class="btn btn-success" id="sendFeedbackBtn">📨 Verzenden</button>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB INFO -->
-        <div id="tab-info" class="tab-content">
-            <div class="container">
-                <h2>📋 Rol informatie</h2>
-                <div id="rolInfoContainer">
-                    <div class="rolinfo">
-                        <span class="label">Jouw rol:</span>
-                        <div class="content" id="myRoleInfo">-</div>
-                    </div>
-                    <div id="otherRolesInfo"></div>
+            <!-- Livefeed -->
+            <div class="livefeed" id="liveFeedContainer">
+                <h3>📢 Klassenlivefeed <span class="small-badge" id="feedCount">0</span></h3>
+                <div id="feedEntries">
+                    <div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- NIEUW: TAB BEHEER (alleen voor docent) -->
-        <div id="tab-admin" class="tab-content">
-            <div class="container">
-                <h2>🔧 Beheer rollen</h2>
-                <p class="sub">Wijs rollen toe aan deelnemers.</p>
-                <div id="adminPeerList"></div>
-                <button class="btn btn-primary" id="adminSaveBtn">💾 Opslaan</button>
-                <div class="save-indicator" id="adminSaveIndicator"></div>
             </div>
         </div>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, remove, onDisconnect, serverTimestamp, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
-        authDomain: "speeltuin-recherche.firebaseapp.com",
-        databaseURL: "https://speeltuin-recherche-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "speeltuin-recherche",
-        storageBucket: "speeltuin-recherche.firebasestorage.app",
-        messagingSenderId: "499912834123",
-        appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // ----- 5 SCENARIO'S -----
-    const SCENARIOS = [
-        {
-            id: 'scenario1',
-            naam: "Winkeldiefstal",
-            rollen: {
-                Burger: { info: "Je bent getuige van een winkeldiefstal in de supermarkt.\nJe zag een man een fles whisky in zijn jas stoppen en weglopen.\nJe hebt de man niet eerder gezien.\nHet was rond 14:30 uur.\nDe man droeg een donkere jas en een pet." },
-                Collega1: { info: "Je bent de eerste agent ter plaatse.\nDe supermarktmanager geeft aan dat er een fles whisky gestolen is (ter waarde van € 40).\nDe verdachte is weggerend richting het station.\nSignalement: man, 40-45 jaar, 1.80 m, donkere jas, blauwe pet, spijkerbroek." },
-                Collega2: { info: "Je bent de tweede agent.\nJe hebt een getuige gesproken die de verdachte zag wegrennen.\nHij stapte in een zwarte auto, kenteken onbekend.\nDe getuige dacht dat de man een tatoeage op zijn nek had." },
-                Meldkamer: { info: "Je bent de meldkamer. Je hebt nog geen informatie. Stel vragen aan collega's om de 7 W's te achterhalen." }
-            }
-        },
-        {
-            id: 'scenario2',
-            naam: "Verkeersongeval",
-            rollen: {
-                Burger: { info: "Je bent een omstander die een aanrijding zag tussen een personenauto en een fietser.\nHet gebeurde op de kruising van de Kerkstraat en de Molenweg.\nJe hoorde een harde knal en zag de fietser over de grond rollen.\nDe fietser was een oudere man, ongeveer 70 jaar." },
-                Collega1: { info: "Je bent de eerste agent ter plaatse.\nDe fietser is gewond aan zijn been en is naar het ziekenhuis gebracht.\nDe automobilist is een vrouw van middelbare leeftijd.\nZe verklaarde dat ze de fietser niet had gezien door de laagstaande zon." },
-                Collega2: { info: "Je bent de tweede agent.\nJe hebt de schade opgenomen: de fiets is total loss, de auto heeft een deuk in de motorkap.\nEr waren geen andere getuigen, behalve de omstander die jullie hebben gesproken." },
-                Meldkamer: { info: "Je bent de meldkamer. Je hebt nog geen informatie. Stel vragen." }
-            }
-        },
-        {
-            id: 'scenario3',
-            naam: "Geluidsoverlast",
-            rollen: {
-                Burger: { info: "Je bent een buurtbewoner die al weken last heeft van harde muziek uit het pand ernaast.\nHet is vooral 's avonds en 's nachts erg.\nJe hebt de politie al meerdere keren gebeld, maar er verandert niets.\nVannacht was het weer zo erg, je kon niet slapen." },
-                Collega1: { info: "Je bent de wijkagent.\nJe hebt al meerdere meldingen van geluidsoverlast op dit adres.\nDe bewoner is een jonge man die vaak feestjes geeft.\nEr is al een officiële waarschuwing gegeven." },
-                Collega2: { info: "Je bent de collega die ter plaatse gaat.\nJe hoort al van buiten de harde bas.\nDe bewoner doet open en lijkt onder invloed van alcohol.\nHij weigert de muziek zachter te zetten." },
-                Meldkamer: { info: "Je bent de meldkamer. Je hebt nog geen informatie." }
-            }
-        },
-        {
-            id: 'scenario4',
-            naam: "Huiselijk geweld",
-            rollen: {
-                Burger: { info: "Je bent de buurman die schreeuwende stemmen hoorde en een klap.\nJe keek uit het raam en zag een man en vrouw ruzie maken op de stoep.\nDe man duwde de vrouw hard tegen de muur.\nJe hebt de politie gebeld." },
-                Collega1: { info: "Je bent de eerste agent ter plaatse.\nDe vrouw heeft een blauw oog en is erg overstuur.\nDe man is weggegaan voor jullie aankwamen.\nDe vrouw wil geen aangifte doen, ze is bang." },
-                Collega2: { info: "Je bent de tweede agent.\nJe hebt een buurvrouw gesproken die zegt dat dit vaker gebeurt.\nZe vertelt dat de man vaak agressief is en dat de vrouw regelmatig blauwe plekken heeft.\nZe hoopt dat jullie er wat aan doen." },
-                Meldkamer: { info: "Je bent de meldkamer. Je hebt nog geen informatie." }
-            }
-        },
-        {
-            id: 'scenario5',
-            naam: "Diefstal uit auto",
-            rollen: {
-                Burger: { info: "Je bent de eigenaar van de auto.\nJe hebt je auto geparkeerd voor de supermarkt.\nToen je terugkwam, zag je dat het zijraam was ingeslagen.\nEr is een tas met een laptop en portemonnee uit de auto gestolen.\nJe hebt de politie gebeld." },
-                Collega1: { info: "Je bent de eerste agent ter plaatse.\nJe hebt de schade opgenomen en een buurtonderzoek gedaan.\nEen getuige zegt een man te hebben zien wegrennen met een tas.\nSignalement: jongeman, 20-25 jaar, donkere kleding, pet." },
-                Collega2: { info: "Je bent de tweede agent.\nJe hebt camerabeelden opgevraagd van de supermarkt.\nOp de beelden is te zien dat de dader een zwarte jas droeg en een rugzak bij zich had.\nHij rende weg in de richting van het park." },
-                Meldkamer: { info: "Je bent de meldkamer. Je hebt nog geen informatie." }
-            }
-        }
-    ];
-
-    // ----- HULPFUNCTIES -----
-    function getCaseRef() { return ref(db, `cases/${myClass}`); }
-    function getMutatieRef() { return ref(db, `mutaties/${myClass}`); }
-
-    // ----- DOM REFS -----
-    const $ = id => document.getElementById(id);
-    const loginScreen = $('loginScreen');
-    const mainScreen = $('mainScreen');
-    const usernameInput = $('usernameInput');
-    const classSelect = $('classSelect');
-    const connectBtn = $('connectBtn');
-    const loginError = $('loginError');
-    const displayName = $('displayName');
-    const roleDisplay = $('roleDisplay');
-    const statusLed = $('statusLed');
-    const statusText = $('statusText');
-    const userCount = $('userCount');
-    const userList = $('userList');
-    const microStatus = $('microStatus');
-    const retryMicBtn = $('retryMicBtn');
-    const pttButton = $('pttButton');
-    const chatMessages = $('chatMessages');
-    const chatInput = $('chatInput');
-    const chatSendBtn = $('chatSendBtn');
-    const disconnectBtn = $('disconnectBtn');
-    const resetBtn = $('resetBtn');
-    const mutWie = $('mutWie');
-    const mutWat = $('mutWat');
-    const mutWaar = $('mutWaar');
-    const mutWanneer = $('mutWanneer');
-    const mutWaarmee = $('mutWaarmee');
-    const mutWijze = $('mutWijze');
-    const mutWaarom = $('mutWaarom');
-    const submitMutatieBtn = $('submitMutatieBtn');
-    const saveIndicator = $('saveIndicator');
-    const myRoleInfo = $('myRoleInfo');
-    const otherRolesInfo = $('otherRolesInfo');
-    const livefeedContainer = $('livefeedContainer');
-    const feedKlas = $('feedKlas');
-    const currentCaseName = $('currentCaseName');
-    const nextCaseBtn = $('nextCaseBtn');
-    // Nieuwe referenties
-    const teacherCodeInput = $('teacherCode');
-    const adminTabBtn = $('adminTabBtn');
-    const adminPeerList = $('adminPeerList');
-    const adminSaveBtn = $('adminSaveBtn');
-    const adminSaveIndicator = $('adminSaveIndicator');
-    // Nieuwe live feed referenties
-    const liveMsgInput = $('liveMsgInput');
-    const liveMsgSendBtn = $('liveMsgSendBtn');
-    const liveMsgContainer = $('liveMsgContainer');
-    // Nieuwe kaart referentie
-    const mapDiv = $('map');
-
-    // ----- STATE -----
-    let peer = null;
-    let localStream = null;
-    let isSpeaking = false;
-    let isConnected = false;
-    let myUsername = '';
-    let myClass = '';
-    let myRole = '';
-    let myId = '';
-    let currentScenario = null;
-    let currentCaseIndex = 0;
-    const connections = new Set();
-    const dataConnections = new Map();
-    const audioConnections = new Map();
-    let peerListUnsubscribe = null;
-    let peersRef = null;
-    let microEnabled = false;
-    let isMicInitializing = false;
-    let isAdmin = false;
-    let isTeacher = false; // NIEUW
-    let caseUnsubscribe = null;
-    let mutatieUnsubscribe = null;
-    let audioContextStarted = false;
-    let myPeerListener = null; // NIEUW
-    let allAudioElements = [];
-    let audioUnmuted = false;
-    const TEACHER_CODE = "docent123"; // NIEUW - pas aan indien gewenst
-    // Nieuwe variabele voor live feed listener
-    let liveMsgUnsubscribe = null;
-    // Nieuwe variabelen voor kaart
-    let map = null;
-    let markersLayer = null;
-    let locationRef = null;
-    let locationUnsubscribe = null;
-    let myLocationSent = false;
-
-    function generateId() { return 'P-' + Math.random().toString(36).substr(2, 8); }
-
-    function setStatus(state, text) {
-        const ledMap = { online: 'online', offline: 'offline', speaking: 'speaking' };
-        statusLed.className = 'status-led ' + (ledMap[state] || 'offline');
-        statusText.textContent = text || state;
-    }
-
-    function addChat(sender, text, system = false) {
-        const div = document.createElement('div');
-        div.style.marginBottom = '4px';
-        div.style.fontSize = '0.85rem';
-        if (system) {
-            div.style.color = '#8899aa';
-            div.innerHTML = `<em>${sender}:</em> ${text}`;
-        } else {
-            div.innerHTML = `<strong style="color:#f0c040;">${sender}</strong> ${text}`;
-        }
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function updateUserList() {
-        userCount.textContent = `👥 ${connections.size}`;
-        let html = `<span class="chip" style="border-color:#f0c040;">📡 ${myId} (Jij)</span>`;
-        for (let id of connections) {
-            html += `<span class="chip">📞 ${id}</span>`;
-        }
-        userList.innerHTML = html || '<span style="color:#667788;">Niemand anders in deze klas</span>';
-    }
-
-    // ----- AUDIO CONTEXT STARTEN -----
-    function startAudioContext() {
-        if (audioContextStarted) return;
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        if (ctx.state === 'suspended') {
-            ctx.resume().then(() => {
-                audioContextStarted = true;
-                console.log('Audio context gestart');
-            }).catch(err => console.warn('Audio context start mislukt:', err));
-        } else {
-            audioContextStarted = true;
-        }
-    }
-
-    // ----- UNMUTE ALL AUDIO -----
-    function unmuteAllAudio() {
-        if (audioUnmuted) return;
-        audioUnmuted = true;
-        allAudioElements.forEach(a => a.muted = false);
-        console.log('🔊 Audio ontgrendeld!');
-    }
-
-    // ----- MICROFOON -----
-    async function initMicrophone() {
-        if (isMicInitializing) return;
-        isMicInitializing = true;
-        microStatus.textContent = '⏳ Microfoon wordt gestart...';
-        microStatus.className = 'micro-status';
-        retryMicBtn.classList.add('hidden');
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-            });
-            localStream.getAudioTracks().forEach(t => t.enabled = false);
-            microEnabled = true;
-            microStatus.textContent = '✅ Microfoon gereed';
-            microStatus.className = 'micro-status ok';
-            retryMicBtn.classList.add('hidden');
-            // PTT voor alle rollen beschikbaar
-            pttButton.disabled = false;
-            pttButton.classList.remove('disabled');
-            if (isConnected) {
-                for (let peerId of connections) {
-                    if (!audioConnections.has(peerId)) {
-                        callPeer(peerId);
-                    }
-                }
-            }
-            isMicInitializing = false;
-            return true;
-        } catch (err) {
-            microEnabled = false;
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                microStatus.textContent = '⚠️ Microfoontoegang geweigerd. Alleen chat beschikbaar.';
-                microStatus.className = 'micro-status warning';
-            } else {
-                microStatus.textContent = '❌ Geen microfoon – chat werkt wel.';
-                microStatus.className = 'micro-status err';
-            }
-            retryMicBtn.classList.remove('hidden');
-            pttButton.disabled = true;
-            pttButton.classList.add('disabled');
-            isMicInitializing = false;
-            return false;
-        }
-    }
-
-    async function retryMicrophone() {
-        if (localStream) {
-            localStream.getTracks().forEach(t => t.stop());
-            localStream = null;
-        }
-        for (let entry of audioConnections.values()) {
-            entry.call.close();
-            entry.audio.remove();
-        }
-        audioConnections.clear();
-        await initMicrophone();
-    }
-
-    // ----- PTT -----
-    function startSpeaking() {
-        unmuteAllAudio();
-        if (!isConnected || !microEnabled || isSpeaking) return;
-        startAudioContext();
-        isSpeaking = true;
-        pttButton.classList.add('active');
-        pttButton.textContent = '🔴 SPREEKT...';
-        setStatus('speaking', 'Spreekt...');
-        if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = true);
-    }
-
-    function stopSpeaking() {
-        if (!isSpeaking) return;
-        isSpeaking = false;
-        pttButton.classList.remove('active');
-        pttButton.textContent = '🎤 HOU IN';
-        setStatus('online', 'Online');
-        if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = false);
-    }
-
-    // ----- AUDIO OPROEP -----
-    function callPeer(peerId) {
-        if (!localStream || !microEnabled) return;
-        if (audioConnections.has(peerId)) return;
-        const call = peer.call(peerId, localStream);
-        call.on('stream', (remoteStream) => {
-            startAudioContext();
-            const audio = document.createElement('audio');
-            audio.autoplay = true;
-            audio.muted = false;
-            audio.srcObject = remoteStream;
-            audio.volume = 1.0;
-            document.body.appendChild(audio);
-            allAudioElements.push(audio);
-            audio.play().catch(err => console.warn('Audio play mislukt:', err));
-            audioConnections.set(peerId, { call, audio });
-        });
-        call.on('close', () => {
-            const entry = audioConnections.get(peerId);
-            if (entry) {
-                entry.audio.remove();
-                allAudioElements = allAudioElements.filter(audio => audio !== entry.audio);
-                audioConnections.delete(peerId);
-            }
-        });
-    }
-
-    // ----- DATA VERBINDING -----
-    function setupDataConnection(conn) {
-        const peerId = conn.peer;
-        if (connections.has(peerId)) {
-            conn.close();
-            return;
-        }
-
-        conn.on('open', () => {
-            connections.add(peerId);
-            dataConnections.set(peerId, conn);
-            conn.send({ type: 'hello', username: myUsername, role: myRole, class: myClass });
-            if (microEnabled && localStream) {
-                callPeer(peerId);
-            }
-            updateUserList();
-            addChat('🔗', `${peerId} is verbonden`, true);
-        });
-
-        conn.on('data', (data) => {
-            if (data.class && data.class !== myClass) return;
-            if (data.type === 'hello') {
-                return;
-            }
-            if (data.type === 'chat') {
-                addChat(`${data.sender} (${data.role})`, data.text);
-            }
-            // NIEUW: ontvang rollen-update
-            if (data.type === 'rolesUpdated') {
-                updateRoleInfo();
-            }
-        });
-
-        conn.on('close', () => {
-            connections.delete(peerId);
-            dataConnections.delete(peerId);
-            const entry = audioConnections.get(peerId);
-            if (entry) {
-                entry.call.close();
-                entry.audio.remove();
-                allAudioElements = allAudioElements.filter(audio => audio !== entry.audio);
-                audioConnections.delete(peerId);
-            }
-            updateUserList();
-            addChat('🔌', `${peerId} is verbroken`, true);
-        });
-    }
-
-    // ----- PEER DISCOVERY (Firebase) -----
-    function startPeerDiscovery() {
-        peersRef = ref(db, `porto_peers/${myClass}`);
-        const myPeerRef = ref(db, `porto_peers/${myClass}/${myId}`);
-        set(myPeerRef, {
-            username: myUsername,
-            role: myRole,
-            timestamp: serverTimestamp()
-        });
-        onDisconnect(myPeerRef).remove();
-
-        // Luister naar veranderingen van eigen rol (docent kan rol aanpassen)
-        myPeerListener = onValue(myPeerRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.role && data.role !== myRole) {
-                myRole = data.role;
-                roleDisplay.textContent = myRole;
-                // Kleur aanpassen
-                if (myRole === 'Burger') roleDisplay.style.background = '#6c757d';
-                else if (myRole === 'Meldkamer') { roleDisplay.style.background = '#f0c040'; roleDisplay.style.color = '#1a2332'; }
-                else if (myRole === 'Docent') { roleDisplay.style.background = '#f0c040'; roleDisplay.style.color = '#1a2332'; }
-                else roleDisplay.style.background = '#28a745';
-                // Mutatie-tab zichtbaarheid
-                const mutatieTab = document.querySelector('[data-tab="tab-mutatie"]');
-                if (myRole === 'Meldkamer') mutatieTab.style.display = 'block';
-                else mutatieTab.style.display = 'none';
-                // Rol-info updaten
-                updateRoleInfo();
-            }
-        });
-
-        // Bestaande peer-list listener
-        if (peerListUnsubscribe) peerListUnsubscribe();
-        peerListUnsubscribe = onValue(peersRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            const ids = Object.keys(data);
-            for (let id of ids) {
-                if (id === myId) continue;
-                if (!connections.has(id)) {
-                    const conn = peer.connect(id);
-                    if (conn) {
-                        setupDataConnection(conn);
-                    } else {
-                        console.warn('Kan niet verbinden met', id);
-                    }
-                }
-            }
-            // Admin-lijst bijwerken als docent
-            if (isAdmin) renderAdminList(data);
-        });
-    }
-
-    // ----- KAART: locatie delen en tonen -----
-    function startLocationSharing() {
-        if (!mapDiv) return;
-        // Initialiseer kaart
-        if (!map) {
-            map = L.map('map').setView([52.1326, 5.2913], 13); // Centraal Nederland
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-            markersLayer = L.layerGroup().addTo(map);
-        }
-        // Vraag geolocatie aan en schrijf naar Firebase
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    locationRef = ref(db, `locaties/${myClass}/${myId}`);
-                    set(locationRef, {
-                        username: myUsername,
-                        role: myRole,
-                        lat: lat,
-                        lng: lng,
-                        timestamp: serverTimestamp()
-                    }).then(() => {
-                        console.log('Locatie opgeslagen');
-                        myLocationSent = true;
-                    }).catch(err => console.error('Fout bij opslaan locatie:', err));
-                },
-                (error) => {
-                    console.warn('Geolocatie niet beschikbaar:', error);
-                    // Optioneel: fallback locatie (bijv. school) plaatsen
-                    locationRef = ref(db, `locaties/${myClass}/${myId}`);
-                    set(locationRef, {
-                        username: myUsername,
-                        role: myRole,
-                        lat: 52.1326,
-                        lng: 5.2913,
-                        timestamp: serverTimestamp(),
-                        fallback: true
-                    }).catch(err => console.error('Fout bij fallback:', err));
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-            );
-        } else {
-            console.warn('Geolocatie wordt niet ondersteund door browser');
-        }
-
-        // Luister naar locaties van de klas en update markers
-        const locRef = ref(db, `locaties/${myClass}`);
-        if (locationUnsubscribe) locationUnsubscribe();
-        locationUnsubscribe = onValue(locRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            // Wis huidige markers en voeg nieuwe toe
-            markersLayer.clearLayers();
-            for (let [id, loc] of Object.entries(data)) {
-                if (!loc.lat || !loc.lng) continue;
-                const marker = L.marker([loc.lat, loc.lng]).addTo(markersLayer);
-                marker.bindPopup(`<strong>${loc.username}</strong><br>Rol: ${loc.role}`);
-            }
-        });
-    }
-
-    // ----- ROLTOEWIJZING -----
-    async function fetchMyRole() {
-        if (isTeacher) return 'Docent';
-        const myPeerRef = ref(db, `porto_peers/${myClass}/${myId}`);
-        const snapshot = await get(myPeerRef);
-        const data = snapshot.val();
-        return (data && data.role) ? data.role : 'Burger';
-    }
-
-    // ----- ADMIN FUNCTIES -----
-    function renderAdminList(data) {
-        if (!data) {
-            adminPeerList.innerHTML = '<div class="empty-state">Geen deelnemers.</div>';
-            return;
-        }
-        let html = '';
-        for (let [id, peer] of Object.entries(data)) {
-            if (id === myId) continue; // sla jezelf over
-            html += `
-                <div class="admin-peer-row" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <span style="flex:1;">${peer.username || id} (${id})</span>
-                    <select class="role-select" data-peer-id="${id}" style="width:120px;">
-                        <option value="Burger" ${peer.role === 'Burger' ? 'selected' : ''}>Burger</option>
-                        <option value="Collega1" ${peer.role === 'Collega1' ? 'selected' : ''}>Collega1</option>
-                        <option value="Collega2" ${peer.role === 'Collega2' ? 'selected' : ''}>Collega2</option>
-                        <option value="Meldkamer" ${peer.role === 'Meldkamer' ? 'selected' : ''}>Meldkamer</option>
-                    </select>
-                </div>
-            `;
-        }
-        adminPeerList.innerHTML = html || '<div class="empty-state">Geen deelnemers.</div>';
-    }
-
-    function saveAdminRoles() {
-        const selects = document.querySelectorAll('.role-select');
-        const updates = [];
-        selects.forEach(sel => {
-            const peerId = sel.dataset.peerId;
-            const role = sel.value;
-            updates.push(set(ref(db, `porto_peers/${myClass}/${peerId}/role`), role));
-        });
-        Promise.all(updates).then(() => {
-            adminSaveIndicator.textContent = '✅ Rollen opgeslagen!';
-            adminSaveIndicator.className = 'save-indicator saved';
-            // NIEUW: stuur een melding naar alle deelnemers dat de rollen zijn bijgewerkt
-            for (let conn of dataConnections.values()) {
-                try {
-                    conn.send({ type: 'rolesUpdated', sender: myUsername, role: myRole, class: myClass });
-                } catch(e) {}
-            }
-        }).catch(err => {
-            adminSaveIndicator.textContent = '❌ Fout: ' + err.message;
-            adminSaveIndicator.className = 'save-indicator';
-        });
-    }
-
-    // ----- CASUS BEHEER -----
-    function loadCase(index) {
-        if (index >= SCENARIOS.length) {
-            currentScenario = null;
-            currentCaseName.textContent = 'Alle casussen afgerond! 🎉';
-            updateRoleInfo();
-            return;
-        }
-        currentScenario = SCENARIOS[index];
-        currentCaseName.textContent = currentScenario.naam;
-        updateRoleInfo();
-        mutWie.value = mutWat.value = mutWaar.value = mutWaarmee.value = mutWijze.value = mutWaarom.value = '';
-        mutWanneer.value = '';
-        saveIndicator.textContent = '';
-        if (myRole === 'Meldkamer') {
-            addChat('📢', `Nieuwe casus gestart: ${currentScenario.naam}. Begin met het uitvragen van de 7 W's.`, true);
-        } else {
-            addChat('📢', `Nieuwe casus: ${currentScenario.naam}. Bereid je voor op de simulatie.`, true);
-        }
-        const caseRef = getCaseRef();
-        set(caseRef, {
-            index: index,
-            scenarioId: currentScenario.id,
-            naam: currentScenario.naam,
-            timestamp: serverTimestamp()
-        });
-    }
-
-    function nextCase() {
-        if (!isAdmin) return;
-        currentCaseIndex++;
-        loadCase(currentCaseIndex);
-        livefeedContainer.innerHTML = '<div class="empty-state">⏳ Wachten op mutatie...</div>';
-        const mutRef = getMutatieRef();
-        remove(mutRef);
-    }
-
-    // ----- MUTATIE OPSLAAN -----
-    function submitMutatie() {
-        if (myRole !== 'Meldkamer') {
-            saveIndicator.textContent = '❌ Alleen de meldkamer kan een mutatie indienen.';
-            saveIndicator.className = 'save-indicator';
-            return;
-        }
-        const mutatie = {
-            wie: mutWie.value.trim(),
-            wat: mutWat.value.trim(),
-            waar: mutWaar.value.trim(),
-            wanneer: mutWanneer.value || 'Niet gespecificeerd',
-            waarmee: mutWaarmee.value.trim(),
-            wijze: mutWijze.value.trim(),
-            waarom: mutWaarom.value.trim(),
-            auteur: myUsername,
-            rol: myRole,
-            timestamp: serverTimestamp(),
-            klas: myClass,
-            scenario: currentScenario ? currentScenario.naam : 'Onbekend'
+<script>
+    (function() {
+        // ------ FIREBASE CONFIG ------
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj8dXkl1rEfyx54_MDy_tYd2P7kAeU8VQ",
+            authDomain: "q2les3samirgem.firebaseapp.com",
+            databaseURL: "https://q2les3samirgem-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "q2les3samirgem",
+            storageBucket: "q2les3samirgem.firebasestorage.app",
+            messagingSenderId: "8681998187",
+            appId: "1:8681998187:web:fd08067494a010dc572e2e"
         };
-        if (!mutatie.wie && !mutatie.wat && !mutatie.waar) {
-            saveIndicator.textContent = '⚠️ Vul minimaal Wie, Wat en Waar in.';
-            saveIndicator.className = 'save-indicator';
-            return;
-        }
-        saveIndicator.textContent = '⏳ Opslaan...';
-        saveIndicator.className = 'save-indicator';
-        const newRef = push(getMutatieRef());
-        set(newRef, mutatie).then(() => {
-            saveIndicator.textContent = '✅ Mutatie opgeslagen!';
-            saveIndicator.className = 'save-indicator saved';
-        }).catch(err => {
-            saveIndicator.textContent = '❌ Fout: ' + err.message;
-            saveIndicator.className = 'save-indicator';
-        });
-    }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    // ----- LIVEFEED (bestaande) -----
-    function loadLivefeed() {
-        const mutRef = getMutatieRef();
-        if (mutatieUnsubscribe) mutatieUnsubscribe();
-        mutatieUnsubscribe = onValue(mutRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) {
-                livefeedContainer.innerHTML = '<div class="empty-state">📝 Nog geen mutatie ingediend.</div>';
-                return;
-            }
-            const entries = Object.entries(data);
-            const last = entries.reduce((a, b) => (a[1].timestamp > b[1].timestamp ? a : b));
-            const mut = last[1];
-            const fields = [
-                { key: 'wie', label: 'W1 - WIE' },
-                { key: 'wat', label: 'W2 - WAT' },
-                { key: 'waar', label: 'W3 - WAAR' },
-                { key: 'wanneer', label: 'W4 - WANNEER' },
-                { key: 'waarmee', label: 'W5 - WAARMEE' },
-                { key: 'wijze', label: 'W6 - WIJZE' },
-                { key: 'waarom', label: 'W7 - WAAROM' }
-            ];
-            let complete = true;
-            let checklistHtml = '';
-            for (let f of fields) {
-                const val = mut[f.key] || '';
-                const filled = val.trim().length > 0 && val !== 'Niet gespecificeerd';
-                if (!filled) complete = false;
-                checklistHtml += `<span class="item ${filled ? 'ok' : 'miss'}">${f.label} ${filled ? '✅' : '❌'}</span>`;
-            }
-            const tijd = mut.timestamp ? new Date(mut.timestamp).toLocaleString('nl-NL') : 'Onbekend';
-            livefeedContainer.innerHTML = `
-                <div class="livefeed-item">
-                    <div class="header">
-                        <span class="auteur">📝 ${mut.auteur || '?'} (${mut.rol || '?'})</span>
-                        <span>${tijd}</span>
-                    </div>
-                    <div class="fields">
-                        ${fields.map(f => `<div><strong>${f.label}:</strong> ${mut[f.key] || '-'}</div>`).join('')}
-                    </div>
-                    <div class="checklist">${checklistHtml}</div>
-                    <div class="status ${complete ? 'status-complete' : 'status-incomplete'}">
-                        ${complete ? '✅ Alle 7 W\'s zijn ingevuld!' : '⚠️ Niet alle W\'s zijn ingevuld.'}
-                    </div>
-                </div>
-            `;
-        });
-    }
+        // DOM referenties
+        const studentNameInput = document.getElementById('studentName');
+        const classSelect = document.getElementById('classSelect');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginStatus = document.getElementById('loginStatus');
+        const pdfViewer = document.getElementById('pdfViewerContainer');
+        const pdfUpload = document.getElementById('pdfUpload');
+        const uploadPdfBtn = document.getElementById('uploadPdfBtn');
+        const hardResetBtn = document.getElementById('hardResetBtn');
+        const currentClassBadge = document.getElementById('currentClassBadge');
+        const sendFeedbackBtn = document.getElementById('sendFeedbackBtn');
+        const feedbackStatus = document.getElementById('feedbackStatus');
+        const feedEntries = document.getElementById('feedEntries');
+        const feedCount = document.getElementById('feedCount');
+        const checklistContainer = document.getElementById('checklistContainer');
 
-    // ----- LIVEFEED (nieuwe live berichten) -----
-    function loadLiveMessages() {
-        const liveRef = ref(db, `liveberichten/${myClass}`);
-        if (liveMsgUnsubscribe) liveMsgUnsubscribe();
-        liveMsgUnsubscribe = onValue(liveRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) {
-                liveMsgContainer.innerHTML = '<div class="empty-state">Nog geen berichten.</div>';
-                return;
-            }
+        // State
+        let currentUser = '';
+        let currentClass = 'ALPHA';
+        let isLoggedIn = false;
+        let pdfDataURL = null;
+
+        // ----- Kwaliteitscheck items (21) -----
+        const items = [
+            "beschrijft in de inleiding van de tekst de aanleiding tot het schrijven van dit proces-verbaal.",
+            "beschrijft het decor op de juiste wijze.",
+            "beschrijft in de kern relevante waarnemingen en handelingen.",
+            "beschrijft in het slot de afhandeling en overige relevante informatie.",
+            "beschrijft zoveel mogelijk de 7 Gouden W's.",
+            "gebruikt de redenen van wetenschap op de juiste manier.",
+            "beschrijft goederen en personen op de juiste manier.",
+            "schrijft feitelijk en eenduidig.",
+            "schrijft relevante plaatsen, data en tijdstippen op de juiste manier.",
+            "deelt de tekst van het proces-verbaal op in alinea's.",
+            "schrijft de gebeurtenissen in chronologische volgorde.",
+            "gebruikt juiste signaalwoorden en voegwoorden.",
+            "gebruikt juiste verwijswoorden.",
+            "past de schrijfstijl aan de lezer aan.",
+            "is consistent in het benoemen van betrokkenen en voorwerpen in het proces-verbaal.",
+            "gebruikt woorden en vaste zinsdelen op de juiste manier.",
+            "gebruikt hoofdletters op de juiste manier.",
+            "gebruikt leestekens op de juiste manier.",
+            "schrijft zinnen die grammaticaal correct zijn.",
+            "spelt woorden op de juiste manier.",
+            "spelt werkwoorden op de juiste manier."
+        ];
+
+        // Bouw het formulier
+        function buildChecklist() {
             let html = '';
-            const entries = Object.entries(data).sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
-            entries.forEach(([id, msg]) => {
-                const tijd = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('nl-NL') : '';
+            items.forEach((desc, index) => {
+                const num = index + 1;
                 html += `
-                    <div class="livefeed-item" style="border-left-color:#28a745;">
-                        <div class="header">
-                            <span class="auteur">📢 ${msg.auteur || '?'} (${msg.rol || '?'})</span>
-                            <span>${tijd}</span>
-                        </div>
-                        <div class="fields">
-                            <div>${msg.text || ''}</div>
-                        </div>
-                        <div class="feedback-block" style="margin-top:6px;">
-                            <input type="text" placeholder="💬 Reactie..." id="feedback-${id}" style="flex:1; margin-right:4px; padding:6px; border-radius:6px; border:1px solid #2a3a4a; background:#0d1624; color:#e0e0e0; font-size:0.85rem;">
-                            <button class="btn btn-secondary" style="width:auto; padding:6px 12px; margin-top:0;" onclick="addFeedback('${id}')">Reageer</button>
-                        </div>
-                        <div class="feedback-list" style="margin-top:4px;">
-                            ${renderFeedback(msg.feedback || {})}
+                    <div class="item">
+                        <div class="num">${num}.</div>
+                        <div class="desc">
+                            <div style="font-weight:500; margin-bottom:2px;">${desc}</div>
+                            <textarea id="item_${num}" placeholder="Schrijf hier je feedback..." rows="2"></textarea>
                         </div>
                     </div>
                 `;
             });
-            liveMsgContainer.innerHTML = html;
-        });
-    }
-
-    function renderFeedback(feedbackObj) {
-        if (!feedbackObj || Object.keys(feedbackObj).length === 0) return '';
-        let html = '';
-        for (let [fbId, fb] of Object.entries(feedbackObj)) {
-            const tijd = fb.timestamp ? new Date(fb.timestamp).toLocaleTimeString('nl-NL') : '';
-            html += `<div style="margin-top:2px; font-size:0.8rem; color:#aabbcc;"><strong style="color:#f0c040;">${fb.auteur}:</strong> ${fb.text} <span style="color:#667788;">(${tijd})</span></div>`;
+            checklistContainer.innerHTML = html;
         }
-        return html;
-    }
+        buildChecklist();
 
-    // ----- NIEUW: verzenden van live bericht -----
-    function sendLiveMessage() {
-        const text = liveMsgInput.value.trim();
-        if (!text) return;
-        const liveRef = ref(db, `liveberichten/${myClass}`);
-        const newRef = push(liveRef);
-        set(newRef, {
-            text: text,
-            auteur: myUsername,
-            rol: myRole,
-            timestamp: serverTimestamp()
-        }).then(() => {
-            liveMsgInput.value = '';
-        }).catch(err => {
-            console.error('Fout bij verzenden:', err);
-        });
-    }
-
-    // ----- NIEUW: feedback toevoegen -----
-    window.addFeedback = function(msgId) {
-        const input = document.getElementById(`feedback-${msgId}`);
-        const feedbackText = input ? input.value.trim() : '';
-        if (!feedbackText) return;
-        const feedbackRef = ref(db, `liveberichten/${myClass}/${msgId}/feedback`);
-        const newRef = push(feedbackRef);
-        set(newRef, {
-            text: feedbackText,
-            auteur: myUsername,
-            timestamp: serverTimestamp()
-        }).then(() => {
-            input.value = '';
-        }).catch(err => {
-            console.error('Fout bij feedback:', err);
-        });
-    };
-
-    // ----- ROLINFO -----
-    function updateRoleInfo() {
-        if (!myRoleInfo) {
-            console.warn('myRoleInfo element niet gevonden');
-            return;
-        }
-        if (!currentScenario) {
-            myRoleInfo.textContent = 'Geen actieve casus. Wacht op de docent.';
-            otherRolesInfo.innerHTML = '';
-            return;
-        }
-        const roles = currentScenario.rollen;
-        const myInfo = roles[myRole] ? roles[myRole].info : (myRole === 'Docent' ? 'Je bent docent. Je kunt deelnemers beheren.' : 'Geen informatie voor deze rol.');
-        myRoleInfo.textContent = myInfo;
-
-        let otherHtml = '';
-        for (let [rol, data] of Object.entries(roles)) {
-            if (rol === myRole) continue;
-            otherHtml += `<div class="rolinfo"><span class="label">${rol}:</span><div class="content">[informatie alleen zichtbaar voor ${rol}]</div></div>`;
-        }
-        otherRolesInfo.innerHTML = otherHtml || '<div class="rolinfo">Geen andere rollen.</div>';
-    }
-
-    // ----- RESET FUNCTIE -----
-    async function resetAll() {
-        if (!confirm('⚠️ Weet je zeker dat je ALLE gebruikers wilt verwijderen en de casus wilt resetten? Dit kan niet ongedaan worden gemaakt.')) return;
-
-        try {
-            await remove(ref(db, `porto_peers/${myClass}`));
-            await remove(ref(db, `cases/${myClass}`));
-            await remove(ref(db, `mutaties/${myClass}`));
-            await remove(ref(db, `liveberichten/${myClass}`));
-            await remove(ref(db, `locaties/${myClass}`)); // NIEUW
-        } catch (err) {
-            console.error('Fout bij resetten:', err);
+        // ----- Hulpfuncties: PDF weergave -----
+        function renderPDF(pdfBase64OrUrl) {
+            if (!pdfBase64OrUrl) {
+                pdfViewer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#8a9bb5; flex-direction:column;">
+                    <span style="font-size:3rem;">📄</span>
+                    <p>Geen PDF geüpload. Docent kan een PDF toevoegen.</p>
+                </div>`;
+                return;
+            }
+            // Gebruik <embed> in plaats van <iframe> voor een naadloze, grote weergave
+            pdfViewer.innerHTML = `<embed src="${pdfBase64OrUrl}" type="application/pdf" style="width:100%; height:100%; border:none;" />`;
         }
 
-        if (peer) {
-            peer.destroy();
-            peer = null;
-        }
-        isConnected = false;
-        connections.clear();
-        dataConnections.clear();
-        audioConnections.clear();
-        if (peerListUnsubscribe) peerListUnsubscribe();
-        if (caseUnsubscribe) caseUnsubscribe();
-        if (mutatieUnsubscribe) mutatieUnsubscribe();
-        if (liveMsgUnsubscribe) liveMsgUnsubscribe();
-        if (locationUnsubscribe) locationUnsubscribe(); // NIEUW
-        if (myPeerListener) myPeerListener();
-        if (localStream) {
-            localStream.getTracks().forEach(t => t.stop());
-            localStream = null;
-        }
-        loginScreen.classList.remove('hidden');
-        mainScreen.classList.add('hidden');
-        setStatus('offline', 'Offline');
-        chatInput.disabled = true;
-        chatSendBtn.disabled = true;
-        pttButton.disabled = true;
-        pttButton.classList.remove('active');
-        pttButton.classList.add('disabled');
-        pttButton.textContent = '🎤 HOU IN';
-        microEnabled = false;
-        microStatus.textContent = '⏳ Microfoon gestopt';
-        microStatus.className = 'micro-status';
-        retryMicBtn.classList.add('hidden');
-        resetBtn.style.display = 'none';
-        nextCaseBtn.style.display = 'none';
-        adminTabBtn.style.display = 'none';
-        mutWie.value = mutWat.value = mutWaar.value = mutWaarmee.value = mutWijze.value = mutWaarom.value = '';
-        mutWanneer.value = '';
-        saveIndicator.textContent = '';
-        livefeedContainer.innerHTML = '<div class="empty-state">⏳ Wachten op mutatie...</div>';
-        liveMsgContainer.innerHTML = '';
-        // Kaart opruimen
-        if (map) {
-            map.remove();
-            map = null;
-            markersLayer = null;
-        }
-    }
-
-    // ----- HOOFDFUNCTIE (verbinden) -----
-    async function connectToRoom() {
-        const username = usernameInput.value.trim();
-        const klas = classSelect.value;
-        if (!username) {
-            loginError.textContent = 'Vul je naam in.';
-            return;
-        }
-        if (klas === 'INDIE') {
-            loginError.textContent = 'Kies een geldige klas.';
-            return;
-        }
-
-        myUsername = username;
-        myClass = klas;
-        myId = generateId();
-
-        // Controleer docentcode
-        const teacherCode = teacherCodeInput.value.trim();
-        if (teacherCode === TEACHER_CODE) {
-            isTeacher = true;
-            myRole = 'Docent';
-            isAdmin = true;
-        } else {
-            isTeacher = false;
-            // Haal rol op uit Firebase (indien al toegewezen)
-            myRole = await fetchMyRole();
-            isAdmin = false;
-        }
-
-        currentCaseIndex = 0;
-        currentScenario = SCENARIOS[0];
-
-        displayName.textContent = myUsername;
-        roleDisplay.textContent = myRole;
-        if (myRole === 'Burger') {
-            roleDisplay.style.background = '#6c757d';
-        } else if (myRole === 'Meldkamer' || myRole === 'Docent') {
-            roleDisplay.style.background = '#f0c040';
-            roleDisplay.style.color = '#1a2332';
-        } else {
-            roleDisplay.style.background = '#28a745';
-        }
-
-        loginScreen.classList.add('hidden');
-        mainScreen.classList.remove('hidden');
-
-        const mutatieTab = document.querySelector('[data-tab="tab-mutatie"]');
-        if (myRole === 'Meldkamer') {
-            mutatieTab.style.display = 'block';
-        } else {
-            mutatieTab.style.display = 'none';
-        }
-
-        // Admin-tab alleen zichtbaar voor docent
-        if (isAdmin) {
-            adminTabBtn.style.display = 'block';
-        } else {
-            adminTabBtn.style.display = 'none';
-        }
-
-        if (isAdmin) {
-            nextCaseBtn.style.display = 'block';
-            nextCaseBtn.onclick = nextCase;
-            resetBtn.style.display = 'inline-block';
-            resetBtn.onclick = resetAll;
-        } else {
-            nextCaseBtn.style.display = 'none';
-            resetBtn.style.display = 'none';
-        }
-
-        feedKlas.textContent = myClass;
-        loadLivefeed();
-        loadLiveMessages(); // NIEUW
-        startLocationSharing(); // NIEUW: start kaart en locatie
-
-        currentCaseName.textContent = currentScenario.naam;
-        updateRoleInfo();
-
-        const caseRef = getCaseRef();
-        if (caseUnsubscribe) caseUnsubscribe();
-        caseUnsubscribe = onValue(caseRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.index !== undefined) {
-                currentCaseIndex = data.index;
-                const scenario = SCENARIOS[currentCaseIndex];
-                if (scenario) {
-                    currentScenario = scenario;
-                    currentCaseName.textContent = scenario.naam;
-                    updateRoleInfo();
+        function loadPdfForClass(className) {
+            const pdfRef = db.ref('classes/' + className + '/pdf');
+            pdfRef.once('value').then(snapshot => {
+                const val = snapshot.val();
+                if (val && val.data) {
+                    pdfDataURL = val.data;
+                    renderPDF(pdfDataURL);
                 } else {
-                    currentScenario = null;
-                    currentCaseName.textContent = 'Alle casussen afgerond! 🎉';
-                    updateRoleInfo();
+                    pdfDataURL = null;
+                    renderPDF(null);
                 }
-            } else {
-                currentCaseIndex = 0;
-                loadCase(0);
-            }
-        });
-
-        setStatus('connecting', 'Verbinden...');
-
-        peer = new Peer(myId);
-        peer.on('open', async () => {
-            isConnected = true;
-            setStatus('online', 'Online');
-            chatInput.disabled = false;
-            chatSendBtn.disabled = false;
-            startPeerDiscovery();
-            await initMicrophone();
-        });
-        peer.on('connection', (conn) => {
-            if (conn.peer !== myId) {
-                setupDataConnection(conn);
-            } else {
-                conn.close();
-            }
-        });
-
-        peer.on('call', (call) => {
-            if (!localStream || !microEnabled) { 
-                call.answer(); 
-                return; 
-            }
-            call.answer(localStream);
-            call.on('stream', (remoteStream) => {
-                startAudioContext();
-                const audio = document.createElement('audio');
-                audio.autoplay = true;
-                audio.muted = false;
-                audio.srcObject = remoteStream;
-                audio.volume = 1.0;
-                document.body.appendChild(audio);
-                allAudioElements.push(audio);
-                audio.play().catch(err => console.warn('Audio afspelen mislukt:', err));
-                audioConnections.set(call.peer, { call, audio });
+            }).catch(err => {
+                console.warn('PDF laadfout:', err);
+                renderPDF(null);
             });
-            call.on('close', () => {
-                const entry = audioConnections.get(call.peer);
-                if (entry) {
-                    entry.audio.remove();
-                    allAudioElements = allAudioElements.filter(audio => audio !== entry.audio);
-                    audioConnections.delete(call.peer);
+        }
+
+        // ----- Livefeed (real-time) -----
+        function startLiveFeed(className) {
+            const feedRef = db.ref('classes/' + className + '/feedback');
+            feedRef.off();
+            feedRef.on('value', snapshot => {
+                const data = snapshot.val();
+                let html = '';
+                let count = 0;
+                if (data) {
+                    const keys = Object.keys(data);
+                    count = keys.length;
+                    const entries = keys.map(k => ({ key: k, ...data[k] }));
+                    entries.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    entries.forEach(entry => {
+                        const naam = entry.student || 'anoniem';
+                        const feedbackObj = entry.feedback || {};
+                        let feedbackText = '';
+                        for (let i = 1; i <= 21; i++) {
+                            const val = feedbackObj[i] || '';
+                            if (val.trim() !== '') {
+                                feedbackText += `● ${i}. ${val.trim()}\n`;
+                            }
+                        }
+                        if (!feedbackText) feedbackText = '(geen feedback ingevuld)';
+                        html += `
+                            <div class="entry">
+                                <strong>${naam}</strong>
+                                <div class="feedback-text">${feedbackText.replace(/\n/g, '<br>')}</div>
+                            </div>
+                        `;
+                    });
+                }
+                if (!html) html = '<div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>';
+                feedEntries.innerHTML = html;
+                feedCount.textContent = count;
+            });
+        }
+
+        // ----- Feedback verzenden (kwaliteitscheck) -----
+        function sendFeedback() {
+            if (!isLoggedIn) {
+                feedbackStatus.textContent = '⚠️ Log eerst in';
+                return;
+            }
+            const feedbackData = {};
+            let anyFilled = false;
+            for (let i = 1; i <= 21; i++) {
+                const textarea = document.getElementById(`item_${i}`);
+                if (textarea) {
+                    const val = textarea.value.trim();
+                    feedbackData[i] = val;
+                    if (val !== '') anyFilled = true;
+                }
+            }
+            if (!anyFilled) {
+                feedbackStatus.textContent = '✏️ Vul ten minste één veld in';
+                return;
+            }
+
+            const feedbackRef = db.ref('classes/' + currentClass + '/feedback');
+            const newRef = feedbackRef.push();
+            newRef.set({
+                student: currentUser,
+                feedback: feedbackData,
+                timestamp: Date.now()
+            }).then(() => {
+                feedbackStatus.textContent = '✅ Verzonden!';
+                for (let i = 1; i <= 21; i++) {
+                    const textarea = document.getElementById(`item_${i}`);
+                    if (textarea) textarea.value = '';
+                }
+                setTimeout(() => feedbackStatus.textContent = '', 3000);
+            }).catch(err => {
+                feedbackStatus.textContent = '❌ Fout: ' + err.message;
+            });
+        }
+
+        // ----- Harde reset -----
+        function hardReset() {
+            if (!confirm(`⚠️ WAARSCHUWING: Dit verwijdert ALLE data uit klas ${currentClass}.\n\n- Alle feedback\n- De geüploade PDF\n\nWeet je het zeker?`)) return;
+            if (!confirm(`Laatste kans: echt ALLES uit ${currentClass} verwijderen?`)) return;
+
+            const classRef = db.ref('classes/' + currentClass);
+            classRef.remove().then(() => {
+                alert(`✅ Klasse ${currentClass} is volledig gereset!`);
+                pdfDataURL = null;
+                renderPDF(null);
+                feedEntries.innerHTML = '<div style="color:#7a8aa0; text-align:center; padding:20px;">Nog geen feedback</div>';
+                feedCount.textContent = '0';
+                feedbackStatus.textContent = '🔄 Reset voltooid';
+                setTimeout(() => feedbackStatus.textContent = '', 3000);
+                loadPdfForClass(currentClass);
+            }).catch(err => alert('❌ Reset fout: ' + err.message));
+        }
+
+        // ----- Docent upload PDF -----
+        function uploadPdf() {
+            if (!isLoggedIn) {
+                alert('Log eerst in als docent');
+                return;
+            }
+            const file = pdfUpload.files[0];
+            if (!file || file.type !== 'application/pdf') {
+                alert('Selecteer een PDF-bestand.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                const pdfRef = db.ref('classes/' + currentClass + '/pdf');
+                pdfRef.set({ data: base64, uploadedBy: currentUser, timestamp: Date.now() })
+                .then(() => {
+                    alert('PDF succesvol geüpload voor klas ' + currentClass);
+                    pdfDataURL = base64;
+                    renderPDF(base64);
+                    pdfUpload.value = '';
+                }).catch(err => alert('Upload fout: ' + err.message));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ----- Inloggen -----
+        function login() {
+            const name = studentNameInput.value.trim();
+            if (!name) {
+                loginStatus.textContent = '❌ Voer een voornaam in';
+                return;
+            }
+            currentUser = name;
+            currentClass = classSelect.value;
+            isLoggedIn = true;
+            loginStatus.textContent = `✅ Ingelogd als ${currentUser} in ${currentClass}`;
+            currentClassBadge.textContent = currentClass;
+            loadPdfForClass(currentClass);
+            startLiveFeed(currentClass);
+            feedbackStatus.textContent = '';
+        }
+
+        // ----- Initialisatie -----
+        function init() {
+            currentClass = classSelect.value;
+            currentClassBadge.textContent = currentClass;
+            if (studentNameInput.value.trim() !== '') {
+                login();
+            } else {
+                loginStatus.textContent = '👤 Voer naam in en klik inloggen';
+            }
+
+            loginBtn.addEventListener('click', login);
+            sendFeedbackBtn.addEventListener('click', sendFeedback);
+            uploadPdfBtn.addEventListener('click', uploadPdf);
+            hardResetBtn.addEventListener('click', hardReset);
+
+            classSelect.addEventListener('change', function() {
+                if (isLoggedIn) login();
+                else {
+                    currentClass = classSelect.value;
+                    currentClassBadge.textContent = currentClass;
                 }
             });
-        });
 
-        peer.on('error', (err) => {
-            console.error(err);
-            if (err.type === 'unavailable-id') {
-                myId = generateId();
-                connectToRoom();
-            } else {
-                addChat('❌ Fout', err.message, true);
-            }
-        });
-
-        peer.on('disconnected', () => {
-            addChat('⚠️', 'Verbinding verbroken, opnieuw verbinden...', true);
-            setTimeout(() => {
-                if (peer) peer.destroy();
-                if (isConnected) connectToRoom();
-            }, 2000);
-        });
-    }
-
-    // ----- EVENT LISTENERS -----
-    connectBtn.addEventListener('click', connectToRoom);
-
-    pttButton.addEventListener('mousedown', startSpeaking);
-    pttButton.addEventListener('mouseup', stopSpeaking);
-    pttButton.addEventListener('mouseleave', stopSpeaking);
-    pttButton.addEventListener('touchstart', (e) => { e.preventDefault(); startSpeaking(); });
-    pttButton.addEventListener('touchend', (e) => { e.preventDefault(); stopSpeaking(); });
-
-    chatSendBtn.addEventListener('click', () => {
-        const text = chatInput.value.trim();
-        if (!text) return;
-        const data = { type: 'chat', sender: myUsername, role: myRole, class: myClass, text };
-        for (let conn of dataConnections.values()) {
-            try { conn.send(data); } catch(e) {}
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    const active = document.activeElement;
+                    if (active && active.tagName === 'TEXTAREA' && active.closest('.kwaliteitscheck')) {
+                        e.preventDefault();
+                        sendFeedback();
+                    }
+                }
+            });
         }
-        addChat(`📤 ${myUsername} (${myRole})`, text);
-        chatInput.value = '';
-    });
-    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') chatSendBtn.click(); });
 
-    retryMicBtn.addEventListener('click', retryMicrophone);
-
-    submitMutatieBtn.addEventListener('click', submitMutatie);
-
-    adminSaveBtn.addEventListener('click', saveAdminRoles);
-
-    // NIEUW: live bericht verzenden
-    liveMsgSendBtn.addEventListener('click', sendLiveMessage);
-    liveMsgInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendLiveMessage(); });
-
-    disconnectBtn.addEventListener('click', () => {
-        if (peer) peer.destroy();
-        connections.clear();
-        dataConnections.clear();
-        for (let entry of audioConnections.values()) {
-            entry.call.close();
-            entry.audio.remove();
-        }
-        audioConnections.clear();
-        isConnected = false;
-        if (peerListUnsubscribe) peerListUnsubscribe();
-        if (myPeerListener) myPeerListener();
-        if (liveMsgUnsubscribe) liveMsgUnsubscribe();
-        if (locationUnsubscribe) locationUnsubscribe(); // NIEUW
-        if (locationRef) remove(locationRef); // NIEUW: verwijder eigen locatie
-        if (peersRef) {
-            const myPeerRef = ref(db, `porto_peers/${myClass}/${myId}`);
-            remove(myPeerRef);
-        }
-        if (caseUnsubscribe) caseUnsubscribe();
-        if (mutatieUnsubscribe) mutatieUnsubscribe();
-        loginScreen.classList.remove('hidden');
-        mainScreen.classList.add('hidden');
-        setStatus('offline', 'Offline');
-        chatInput.disabled = true;
-        chatSendBtn.disabled = true;
-        pttButton.disabled = true;
-        pttButton.classList.remove('active');
-        pttButton.classList.add('disabled');
-        pttButton.textContent = '🎤 HOU IN';
-        if (localStream) {
-            localStream.getTracks().forEach(t => t.stop());
-            localStream = null;
-        }
-        microEnabled = false;
-        microStatus.textContent = '⏳ Microfoon gestopt';
-        microStatus.className = 'micro-status';
-        retryMicBtn.classList.add('hidden');
-        resetBtn.style.display = 'none';
-        nextCaseBtn.style.display = 'none';
-        adminTabBtn.style.display = 'none';
-        // Kaart opruimen
-        if (map) {
-            map.remove();
-            map = null;
-            markersLayer = null;
-        }
-    });
-
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
-        });
-    });
-
-    // Klik op de pagina om de audio context te starten
-    document.addEventListener('click', startAudioContext, { once: true });
-
-    // Start
-    loginScreen.classList.remove('hidden');
-    mainScreen.classList.add('hidden');
+        init();
+    })();
 </script>
 </body>
 </html>
